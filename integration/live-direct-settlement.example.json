@@ -1,0 +1,38 @@
+{
+  "rpc": "http://127.0.0.1:8899",
+  "commitment": "confirmed",
+  "assetMint": "REPLACE_WITH_ASSET_MINT",
+  "principal": "REPLACE_WITH_PRINCIPAL_AUTHORITY",
+  "pathwayId": "REPLACE_WITH_PATHWAY_ID",
+  "signers": [
+    "./principal-keypair.json"
+  ],
+  "feePayer": "REPLACE_WITH_FEE_PAYER",
+  "lookupTables": [],
+  "operations": [
+    {
+      "submitter": "typescript",
+      "action": "mint",
+      "amount": "1000000",
+      "minimumOutput": "1"
+    },
+    {
+      "submitter": "typescript",
+      "action": "redeem",
+      "amount": "1000000",
+      "minimumOutput": "1"
+    },
+    {
+      "submitter": "python",
+      "action": "mint",
+      "amount": "1000000",
+      "minimumOutput": "1"
+    },
+    {
+      "submitter": "python",
+      "action": "redeem",
+      "amount": "1000000",
+      "minimumOutput": "1"
+    }
+  ]
+}

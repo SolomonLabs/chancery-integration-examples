@@ -1,0 +1,36 @@
+{
+  "format": "chancery-build-compatibility",
+  "program": {
+    "name": "Chancery",
+    "programId": "ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz",
+    "declaredVersion": "1.0.0"
+  },
+  "schema": {
+    "sha256": "135b5a6453250101a5c1ea3751bac6382efa32a6d88eeb815c721bf1fdb26aaa",
+    "wireSha256": "c17f08af9323cd0eba87f17ed8e75254e6910a92523e37ffcf75ffa40d6149ee",
+    "knownPdasSha256": "078d7ea1fa5f9f41b21df362d18d050660609989328e4b99eb2c5162305541d2",
+    "instructionsSha256": "aa0d2d63901f6fc307da6c8ae7db527d3eaa44424bd9f6d058ee3d62072a27dd",
+    "accountsSha256": "448b746a2847a4154b77221afaf4c3f745a111f0f8c5b90480a4be046ad3fed2",
+    "eventsSha256": "73ac5e7258e7cc656b132c26596d28da71449c508972bc0d179f44e961262f4a",
+    "typesSha256": "242b6c1dc4f6f05c26186c39cb3f853457ce94332a307a78c674d41c0ca3f9b6",
+    "constantsSha256": "c091a9cdc96a71548980944dace2cc8bef4f5de8155f4857fe78f54c908531b3",
+    "errorsSha256": "46c1a2a08cad1b6c9329be1da4ac58e5740136a6197f920404ca26bd6ebe7887",
+    "instructionCount": 68,
+    "accountCount": 22,
+    "eventCount": 52,
+    "typeCount": 1,
+    "constantCount": 390,
+    "errorCount": 219
+  },
+  "programSource": {
+    "bindingPath": "compatibility/CHANCERY-PROGRAM-SOURCE.sha256",
+    "bindingSha256": "08428d0fdd6131144170e2271cf684afc4022e625cb7681f98f3f498636b1f7c",
+    "treeSha256": "fdf556fdb576dd42a807488c47736eff7d8b7e234c2e45dbf8a2cff0390a9406",
+    "fileCount": 248
+  },
+  "programBinary": {
+    "sha256": null,
+    "verificationRequiredForDeployment": true,
+    "verifierPath": "compatibility/VerifyProgramData.mjs"
+  }
+}

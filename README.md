@@ -1,0 +1,782 @@
+# Chancery Integration Examples
+
+Standalone TypeScript and Python clients for consuming the Chancery program directly through Solana JSON-RPC.
+
+**Program address:** `ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz`
+
+The implementations do not import a Solana client framework or Solomon-owned Solana package. They implement public-key handling, PDA derivation, account codecs, instruction codecs, transaction messages, Ed25519 signing, token-state decoding, RPC calls, and Chancery evidence decoding directly.
+
+## Access and authorization
+
+This repository grants no access to the Chancery program. It is integration reference material only.
+
+Authorization is held on-chain and governed separately. Every state-changing instruction is checked by the program against `PermissionRecord` role bits, pathway policy, asset mode, module activation, and pause state. A caller without a permission record and an eligible pathway can construct a transaction with these clients and the program will reject it. Obtaining a permission grant, a pathway, and the associated policy configuration is a governance process outside this repository.
+
+The read-only surface requires no authorization. `discover` and `decode-transaction` use public RPC data and no signing key.
+
+## Intended consumers
+
+The clients serve two integration patterns:
+
+- **Read-only integrations** — indexers, oracles, reconciliation systems, risk and treasury reporting. These use `discover` to inventory deployment state and `decode-transaction` to read canonical self-CPI settlement evidence. No key material is required. See `typescript/examples/ReadOnlyIntegration.ts` and `python/examples/read_only_integration.py`.
+- **Settlement integrations** — a principal, a delegated executor, or a trilateral counterparty set holding an on-chain permission grant. These additionally use `inspect`, `quote-mint`, `quote-redeem`, `mint`, and `redeem`. See `typescript/examples/SettlementWorkflow.ts` and `python/examples/settlement_workflow.py`.
+
+`--principal`, `--principal-b`, and `--executor` name the parties the program itself defines. They carry no meaning beyond the identities Chancery binds in a settlement.
+
+## Client capabilities
+
+Both clients provide the same operational surface:
+
+| Command | Signing key | Result |
+|---|---|---|
+| `discover` | not required | Fetch and decode the complete Chancery-owned account set, group all account types, verify canonical PDAs and stored bumps, and link assets, pathways, fees, limits, evidence policies, and reserve destinations. |
+| `decode-transaction` | not required | Fetch a confirmed transaction and decode canonical Chancery self-CPI evidence from `meta.innerInstructions`. |
+| `inspect` | not required | Resolve one mint or redeem operation, including identities, permissions, policies, windows, balances, token accounts, PDAs, rates, fees, transfer-fee effects, and blocking conditions. |
+| `quote-mint` | required | Build and sign the exact mint transaction, then call `simulateTransaction` without submitting it. |
+| `mint` | required | Inspect, build, sign, simulate, submit, confirm, fetch the transaction, and decode Chancery evidence. |
+| `quote-redeem` | required | Build and sign the exact redeem transaction, then call `simulateTransaction` without submitting it. |
+| `redeem` | required | Inspect, build, sign, simulate, submit, confirm, fetch the transaction, and decode Chancery evidence. |
+
+Every command prints machine-readable JSON. TypeScript serializes `bigint` values as decimal strings. Python serializes integers as JSON numbers and byte arrays as `0x` hexadecimal strings.
+
+## Runtime dependency boundary
+
+TypeScript runtime dependencies: **none**. It uses Node.js built-ins, `fetch`, and `Uint8Array`. `typescript`, `tsx`, and Node type definitions are development dependencies only. `yarn build:typescript` emits the JSON schema beside the compiled JavaScript so the output runs without the source tree.
+
+Python package dependencies: **none**. It uses the Python standard library, including a direct Ed25519 implementation for Solana transaction signing.
+
+The repository does not import:
+
+```text
+@solana/web3.js
+@coral-xyz/anchor
+@solana/kit
+Metaplex packages
+@solomon-labs/solana packages
+```
+
+## Install and validate
+
+### TypeScript
+
+Requirements: Node.js 24 and Yarn 4.2.2.
+
+```bash
+corepack enable
+yarn install --immutable
+yarn typecheck
+yarn test:typescript
+yarn build:typescript
+```
+
+### Python
+
+Requirements: Python 3.11 or newer.
+
+```bash
+PYTHONPATH=python python -m unittest discover \
+  -s python/tests \
+  -t python \
+  -p 'test_*.py'
+```
+
+## 1. Discover the complete Chancery state
+
+TypeScript:
+
+```bash
+yarn cli:typescript discover \
+  --rpc "$RPC_URL" \
+  --commitment confirmed
+```
+
+Python:
+
+```bash
+PYTHONPATH=python python -m chancery_reference.cli discover \
+  --rpc "$RPC_URL" \
+  --commitment confirmed
+```
+
+`discover` calls `getProgramAccounts` for the fixed Chancery program address, rejects accounts with the wrong owner or executable flag, decodes every recognized discriminator, preserves unrecognized discriminators, and returns:
+
+- `recognizedAccounts` / `recognized_accounts`: every decoded Chancery-owned account;
+- `accountsByType` / `accounts_by_type`: a complete grouping for all 22 account layouts;
+- `unrecognizedAccounts` / `unrecognized_accounts`: address, length, and discriminator for unknown Chancery-owned data;
+- `knownPdas` / `known_pdas`: singleton and signer PDAs, with `state_account` or `signer_pda` classification;
+- `assets`: asset config, asset pause state, token program, deposit rate, redeem rate, pathways, and reserve destinations;
+- `pathways`: linked fee, pathway limit, asset mint/redeem limit, counterparty limit, executor limit, evidence policy, and reserve destinations;
+- the actual settlement limit model: pathway, asset, counterparty, and executor volume scopes;
+- an explicit statement that Chancery has a global pause account but no separate global settlement-volume accumulator.
+
+The grouped account set covers:
+
+```text
+AssetConfig                AssetPauseState
+AuthorityTransfer          BasicFreezeRecord
+ChanceryConfig              CrossChainSignerSet
+EvidencePolicy              FeePolicy
+IssuedTokenControl          LimitPolicy
+ModuleActivationState       OutboundReclaimRecord
+PathwayPolicy               PauseState
+PendingConfigChange         PermissionRecord
+RemoteDomainPolicy          RemoteNonce
+ReserveDestination          SettlementIntent
+SettlementPolicy            UsageWindow
+```
+
+### Canonical PDA verification
+
+For every derivable account family, discovery returns:
+
+```text
+expectedAddress
+bump
+seed byte sequences
+addressMatches
+storedBump
+storedBumpMatches
+```
+
+The clients expose direct derivation functions for:
+
+```text
+authority-transfer
+asset-config
+asset-pause
+basic-freeze-record
+cross-chain-signer-set
+evidence-policy
+fee-policy
+limit-policy
+outbound-reclaim
+pathway-policy
+pending-config-change
+permission
+remote-domain-policy
+remote-nonce
+reserve-destination
+settlement-intent
+settlement-policy
+usage-window
+```
+
+They also report the fixed Chancery config, module activation, pause, issued-token control, event authority, mint authority, and reserve authority PDAs.
+
+`RemoteNonce` does not store `remote_chain_kind` in its account data. Discovery links it to `RemoteDomainPolicy` accounts with the same domain ID, derives each candidate using the policy’s chain-kind byte, and verifies the candidate that matches the nonce account address. If no unique policy linkage exists, the client does not invent a canonical result.
+
+## 2. Decode Chancery self-CPI evidence
+
+TypeScript:
+
+```bash
+yarn cli:typescript decode-transaction \
+  --rpc "$RPC_URL" \
+  --signature "$TRANSACTION_SIGNATURE"
+```
+
+Python:
+
+```bash
+PYTHONPATH=python python -m chancery_reference.cli decode-transaction \
+  --rpc "$RPC_URL" \
+  --signature "$TRANSACTION_SIGNATURE"
+```
+
+The decoder:
+
+1. rejects evidence extraction from a failed transaction;
+2. combines static account keys with version-zero loaded writable and readonly addresses;
+3. traverses `meta.innerInstructions`;
+4. selects instructions invoked by the Chancery program;
+5. requires the canonical event-authority PDA as account zero;
+6. requires the Chancery event-CPI prefix;
+7. identifies the event discriminator;
+8. deserializes the complete event layout;
+9. returns the parent instruction index, inner instruction index, and stack height with the decoded event.
+
+The schema contains 52 Chancery event layouts. Submission commands automatically fetch the confirmed transaction and run the same decoder.
+
+## 3. Inspect a mint or redeem operation
+
+Direct mint:
+
+```bash
+yarn cli:typescript inspect \
+  --action mint \
+  --mode direct \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL" \
+  --amount 1000000 \
+  --minimum-output 995000
+```
+
+Direct redeem:
+
+```bash
+yarn cli:typescript inspect \
+  --action redeem \
+  --mode direct \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL" \
+  --amount 1000000 \
+  --minimum-output 995000
+```
+
+The Python CLI accepts the same options:
+
+```bash
+PYTHONPATH=python python -m chancery_reference.cli inspect \
+  --action mint \
+  --mode direct \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL" \
+  --amount 1000000
+```
+
+### Pathway selection
+
+The client fetches `PathwayPolicy` accounts by discriminator and exact account size, then filters by:
+
+- asset mint;
+- issued-token mint from `ChanceryConfig` and `IssuedTokenControl`;
+- direct, delegated, or trilateral pathway kind;
+- optional pathway ID;
+- pathway status;
+- canonical pathway PDA.
+
+Zero eligible pathways is an error. Multiple eligible pathways require `--pathway-id`; the client does not select one arbitrarily.
+
+### State and account resolution
+
+`inspect` resolves and prints:
+
+- `ModuleActivationState`;
+- `ChanceryConfig`;
+- `PauseState`;
+- `IssuedTokenControl`;
+- `AssetConfig`;
+- `AssetPauseState`;
+- selected `PathwayPolicy`;
+- linked `FeePolicy`;
+- linked pathway, asset, counterparty, and executor `LimitPolicy` accounts;
+- linked `EvidencePolicy`;
+- `SettlementIntent` and `SettlementPolicy` when required;
+- principal A, principal B, and executor identities;
+- canonical `PermissionRecord` PDAs and decoded role observations;
+- canonical `UsageWindow` PDAs and decoded current usage;
+- mint-authority and reserve-authority PDAs;
+- reserve associated token account;
+- source, destination, and fee-recipient token accounts;
+- asset and issued-token mint state;
+- matching `ReserveDestination` accounts;
+- exact instruction arguments;
+- exact ordered instruction-account mapping;
+- every derived PDA, bump, and seed sequence;
+- all blocking issues and the final `ready` result.
+
+Explicit token-account overrides are accepted, but each override is checked against the required mint, owner, and token program. Without an override, the client tries the canonical associated token account and then accepts a non-associated account only when the owner/mint query produces a unique result.
+
+The reference client does not create token accounts. Missing required accounts are reported as blocking issues.
+
+## 4. Calculate remaining limits correctly
+
+The client reproduces Chancery settlement-limit semantics instead of subtracting one generic counter:
+
+### Directional accumulators
+
+```text
+mint   -> UsageWindow.gross_in
+redeem -> UsageWindow.gross_output_amount
+```
+
+Mint limits use the requested collateral amount. This matches Chancery’s conservative accounting even when a Token-2022 transfer fee causes the reserve to receive less.
+
+Redeem limits use gross asset output before Chancery fee deduction and before the recipient transfer fee.
+
+### Fixed periods
+
+For hourly, daily, seven-day, and thirty-day windows, the client calculates the canonical current period start from `nowUnixTimestamp` / `now_unix_timestamp`.
+
+- A stored window from an earlier period is treated as rolled to zero before checking the proposed operation.
+- A stored window start after the canonical current period is a clock-regression blocking issue.
+- An enforced window whose PDA account does not exist is a blocking issue.
+
+For each window, the report includes:
+
+```text
+maximum
+currentAmount
+proposedAmount
+projectedAmount
+remainingBefore
+remainingAfter
+currentActionCount
+projectedActionCount
+actionRemainingBefore
+actionRemainingAfter
+rolledBeforeCheck
+clockRegression
+allowed
+actionAllowed
+```
+
+### Limit dimensions
+
+The settlement report evaluates:
+
+- pathway policy: per-transaction, hourly, daily, seven-day, thirty-day, and action-count caps configured by that policy;
+- asset policy: per-transaction and daily cap, with policy scope bound to the asset mint;
+- counterparty policy: per-transaction and daily cap, using the zero-key template policy and a concrete per-principal daily window;
+- trilateral counterparty policies: separate principal-A and principal-B daily windows;
+- executor policy: per-transaction and daily cap, using the zero-key template policy and a concrete executor window.
+
+The client fails closed when a dimension policy has the wrong scope kind, wrong scope key, unsupported hourly/seven-day/thirty-day/action-count caps, or a delegated counterparty policy without the required daily cap.
+
+There is no separate Chancery global settlement-volume accumulator. The global control at settlement time is `PauseState`; volume containment is enforced through the four dimensions above.
+
+## 5. Calculate rates, Chancery fees, and transfer-aware effective amounts
+
+`AssetConfig` supplies:
+
+```text
+deposit_rate_e9
+redeem_rate_e9
+```
+
+The configured conversion is:
+
+```text
+mint gross output   = rate input × deposit_rate_e9 / 1_000_000_000
+redeem gross output = issued-token input × redeem_rate_e9 / 1_000_000_000
+```
+
+The report keeps the following amounts distinct:
+
+```text
+requested input
+configured gross output from requested input
+asset transfer fee on mint input
+reserve-received mint input
+rate input
+Chancery gross output
+assessed fee
+nominal rebate
+effective rebate
+net Chancery fee
+output before recipient transfer
+asset transfer fee on redeem output
+principal received amount
+routed fee transfer amount
+fee-recipient received amount
+all-in output reduction
+all-in fee basis points
+effective output rate e9
+```
+
+### Mint
+
+For Token-2022 collateral with `TransferFeeConfig`, the client selects the active fee schedule for the current epoch, applies ceiling division and the maximum-fee cap, and calculates the amount the reserve is expected to receive. Chancery issuance is calculated from that reserve-received amount.
+
+Minted issued tokens are credited directly through `mint_to`, so the asset transfer-fee configuration does not reduce the issued-token destination amount.
+
+### Redeem
+
+Chancery calculates gross asset output from the issued-token input, deducts the Chancery fee, then transfers asset tokens from the reserve. The client calculates the Token-2022 transfer fee on the principal transfer and, when the Chancery fee is routed, separately calculates the transfer fee on the fee-recipient transfer.
+
+### Fee policy
+
+The report decodes and applies:
+
+- asset or issued-token denomination;
+- flat fee;
+- percentage fee;
+- floor, ceiling, or nearest rounding;
+- fee cap;
+- minimum fee;
+- flat or percentage rebate;
+- rebate cap;
+- non-negative net-fee floor;
+- activation and expiry;
+- fee-retention or fee-routing policy;
+- fee-recipient owner and token account.
+
+A mint fee policy must use issued-token denomination. A redeem fee policy must use asset denomination. A mismatch is a blocking issue.
+
+`minimum-output` is checked against the predicted principal receipt, not merely the pre-transfer Chancery net output.
+
+### Exactness boundary
+
+The local result is exact for supported SPL Token and Token-2022 transfer-fee behavior at the fetched epoch and account state. A mint with an unavailable mint account or an extension whose received amount cannot be modeled locally is marked `requiresSimulationForExactAmount` / `requires_simulation_for_exact_amount`.
+
+Transaction simulation remains the program-authoritative check against the current slot, current account state, transfer-hook behavior, CPI results, and concurrent state changes.
+
+## 6. Build, simulate, and submit mint transactions
+
+Simulate a direct mint:
+
+```bash
+yarn cli:typescript quote-mint \
+  --mode direct \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL" \
+  --amount 1000000 \
+  --minimum-output 995000 \
+  --signer ./principal-keypair.json
+```
+
+Submit a direct mint:
+
+```bash
+yarn cli:typescript mint \
+  --mode direct \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL" \
+  --amount 1000000 \
+  --minimum-output 995000 \
+  --signer ./principal-keypair.json
+```
+
+Python uses the same command names and options:
+
+```bash
+PYTHONPATH=python python -m chancery_reference.cli quote-mint \
+  --mode direct \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL" \
+  --amount 1000000 \
+  --signer ./principal-keypair.json
+```
+
+## 7. Build, simulate, and submit redeem transactions
+
+```bash
+yarn cli:typescript quote-redeem \
+  --mode direct \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL" \
+  --amount 1000000 \
+  --minimum-output 995000 \
+  --signer ./principal-keypair.json
+
+yarn cli:typescript redeem \
+  --mode direct \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL" \
+  --amount 1000000 \
+  --minimum-output 995000 \
+  --signer ./principal-keypair.json
+```
+
+## Delegated and trilateral settlements
+
+Delegated settlement reads the amount, principal, executor, pathway, minimum output, and optional settlement policy from the canonical `SettlementIntent`. The executor signs.
+
+```bash
+yarn cli:typescript mint \
+  --mode delegated \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL_A" \
+  --executor "$EXECUTOR" \
+  --intent-id "$INTENT_ID" \
+  --fee-payer "$EXECUTOR" \
+  --signer ./executor-keypair.json \
+  --lookup-table "$ADDRESS_LOOKUP_TABLE"
+```
+
+Trilateral settlement requires executor, principal A, and principal B signatures. Repeated `--signer` and `--lookup-table` options are supported.
+
+```bash
+yarn cli:typescript redeem \
+  --mode trilateral \
+  --rpc "$RPC_URL" \
+  --asset-mint "$ASSET_MINT" \
+  --principal "$PRINCIPAL_A" \
+  --principal-b "$PRINCIPAL_B" \
+  --executor "$EXECUTOR" \
+  --intent-id "$INTENT_ID" \
+  --fee-payer "$EXECUTOR" \
+  --signer ./executor-keypair.json \
+  --signer ./principal-a-keypair.json \
+  --signer ./principal-b-keypair.json \
+  --lookup-table "$ADDRESS_LOOKUP_TABLE"
+```
+
+## Transaction implementation
+
+The transaction path directly implements:
+
+- Chancery discriminator and argument encoding;
+- exact account order from the checked-in schema;
+- signer and writable flags;
+- optional zero-address placeholders;
+- fixed program addresses;
+- compact-u16 Solana vector lengths;
+- account-meta aggregation and canonical ordering;
+- unversioned messages;
+- version-zero messages;
+- address lookup table decoding and placement;
+- recent blockhash insertion;
+- Ed25519 message signatures;
+- transaction serialization;
+- packet-size enforcement.
+
+`quote-mint` and `quote-redeem` sign the transaction and call `simulateTransaction` with signature verification enabled.
+
+`mint` and `redeem` run the same simulation first. Submission stops on a simulation error. A successful simulation is followed by `sendTransaction`, confirmation polling through the last valid block height, `getTransaction`, and Chancery evidence decoding.
+
+## Embedding the TypeScript client
+
+```ts
+import {
+    ChanceryClient,
+    loadSolanaKeypairFile,
+} from "./typescript/src/index.js";
+
+const signer = loadSolanaKeypairFile("./principal-keypair.json");
+const client = new ChanceryClient(process.env.RPC_URL ?? "", "confirmed");
+
+const discovery = await client.discover();
+process.stdout.write(`${ChanceryClient.stringify(discovery)}\n`);
+
+const inspection = await client.inspect({
+    action: "mint",
+    mode: "direct",
+    assetMint: process.env.ASSET_MINT ?? "",
+    principal: signer.publicKey,
+    amount: 1_000_000n,
+    minimumOutput: 995_000n,
+});
+
+process.stdout.write(`${ChanceryClient.stringify(inspection)}\n`);
+if (!inspection.ready) {
+    throw new Error(inspection.blockingIssues.join("\n"));
+}
+
+const simulation = await client.simulateTransaction(inspection, {
+    feePayer: signer.publicKey,
+    keypairs: [signer],
+    commitment: "confirmed",
+});
+
+if (simulation.simulation.err !== null) {
+    throw new Error(JSON.stringify(simulation.simulation.err));
+}
+```
+
+## Embedding the Python client
+
+```python
+from chancery_reference.client import (
+    ChanceryClient,
+    SettlementOperationRequest,
+    SettlementTransactionRequest,
+)
+from chancery_reference.solana_transaction import load_solana_keypair_file
+
+signer = load_solana_keypair_file("./principal-keypair.json")
+client = ChanceryClient(RPC_URL, "confirmed")
+
+discovery = client.discover()
+print(ChanceryClient.stringify(discovery))
+
+inspection = client.inspect(
+    SettlementOperationRequest(
+        action="redeem",
+        mode="direct",
+        asset_mint=ASSET_MINT,
+        principal=signer.public_key,
+        amount=1_000_000,
+        minimum_output=995_000,
+    )
+)
+
+print(ChanceryClient.stringify(inspection))
+if not inspection.ready:
+    raise RuntimeError("\n".join(inspection.blocking_issues))
+
+transaction_request = SettlementTransactionRequest(
+    fee_payer=signer.public_key,
+    keypairs=(signer,),
+    commitment="confirmed",
+)
+
+simulation = client.simulate_transaction(inspection, transaction_request)
+if simulation.simulation.error is not None:
+    raise RuntimeError(str(simulation.simulation.error))
+```
+
+## Runnable examples
+
+Two examples per language, one for each integration pattern.
+
+### Read-only
+
+`ReadOnlyIntegration.ts` and `read_only_integration.py` require no key material. They print a deployment summary — account counts by type, unrecognized-account count, asset mints, and pathway IDs — and decode Chancery evidence for any supplied transaction signatures.
+
+```bash
+RPC_URL="$RPC_URL" yarn example:read-only:typescript
+
+RPC_URL="$RPC_URL" PYTHONPATH=python python python/examples/read_only_integration.py
+```
+
+| Variable | Required | Effect |
+|---|---|---|
+| `RPC_URL` | yes | JSON-RPC endpoint. |
+| `FULL_DISCOVERY` | no | Set to `true` to additionally print the complete decoded account inventory. |
+| `TRANSACTION_SIGNATURES` | no | Comma-separated signatures; each is fetched and its Chancery evidence decoded. |
+
+### Settlement
+
+`SettlementWorkflow.ts` and `settlement_workflow.py` inspect one operation, simulate it, and optionally submit it. They require signer keypairs and an on-chain permission grant.
+
+```bash
+RPC_URL="$RPC_URL" \
+ACTION=mint \
+MODE=direct \
+ASSET_MINT="$ASSET_MINT" \
+PRINCIPAL="$PRINCIPAL" \
+AMOUNT=1000000 \
+KEYPAIR_PATHS=./principal-keypair.json \
+yarn example:settlement:typescript
+```
+
+| Variable | Required | Effect |
+|---|---|---|
+| `RPC_URL` | yes | JSON-RPC endpoint. |
+| `ACTION` | yes | `mint` or `redeem`. |
+| `ASSET_MINT` | yes | Collateral mint. |
+| `PRINCIPAL` | yes | Principal identity. |
+| `KEYPAIR_PATHS` | yes | Comma-separated keypair paths for every required signer. |
+| `MODE` | no | `direct` (default), `delegated`, or `trilateral`. |
+| `AMOUNT` | direct mode | Raw unsigned input amount. |
+| `INTENT_ID` | delegated/trilateral | Settlement intent to execute. |
+| `MINIMUM_OUTPUT` | no | Slippage bound checked against predicted principal receipt. |
+| `PATHWAY_ID` | no | Required when more than one pathway is eligible. |
+| `EXECUTOR`, `PRINCIPAL_B` | no | Additional identities for delegated and trilateral modes. |
+| `FEE_PAYER` | no | Defaults to the first signer. |
+| `LOOKUP_TABLES` | no | Comma-separated address lookup tables for version-zero messages. |
+| `SUBMIT` | no | Set to `true` to submit after a successful simulation. Otherwise the example stops at simulation. |
+
+The example exits `2` without simulating when the inspection is not `ready`, and prints every blocking issue.
+
+## Observation consistency
+
+`inspect` establishes a minimum RPC context slot, reads the on-chain Clock sysvar, and applies the resulting slot as the minimum context for dependent account reads. The inspection prints:
+
+```text
+context slot
+Clock Unix timestamp
+Clock epoch
+commitment
+expiry slot
+timestamp source
+```
+
+Usage-window rollover, policy activation and expiry, permission expiry, settlement-intent expiry, and extension-observation freshness use the Clock values. Transaction preparation rejects an inspection after its expiry slot. Simulation remains the execution-time authority because Solana JSON-RPC does not provide an atomic historical snapshot across every account in this workflow.
+
+## Build and deployment binding
+
+The distribution includes `BUILD-COMPATIBILITY.json`, which binds the clients to the Chancery program ID, complete wire schema, protocol-surface hashes, and the aggregate Chancery source-tree hash used to derive the reference surface.
+
+Verify the package and an available Chancery source tree with either implementation:
+
+```bash
+node compatibility/VerifyBuildCompatibility.mjs --source-root /path/to/chancery/source
+python compatibility/verify_build_compatibility.py --source-root /path/to/chancery/source
+```
+
+Inspect or enforce the deployed ProgramData binary hash:
+
+```bash
+node compatibility/VerifyProgramData.mjs \
+  --rpc <RPC_URL> \
+  --expected-sha256 <PROGRAM_BINARY_SHA256>
+```
+
+Run the deployment-bound direct-settlement conformance gate after filling in the supplied configuration template:
+
+```bash
+node integration/RunDirectSettlement.mjs ./live-direct-settlement.json
+```
+
+The runner submits TypeScript mint and redeem operations decoded by Python, followed by Python mint and redeem operations decoded by TypeScript.
+
+## Repository layout
+
+```text
+typescript/src/client/ChanceryClient.ts          Operational TypeScript client
+typescript/src/client/ChanceryDiscovery.ts       Full state discovery and PDA verification
+typescript/src/client/ChanceryProtocol.ts        Chancery policy, fee, limit, and PDA rules
+typescript/src/client/cli.ts                     TypeScript CLI
+typescript/src/ChanceryRpc.ts                    JSON-RPC client
+typescript/src/ChanceryInstruction.ts            Direct instruction encoding
+typescript/src/ChanceryAccount.ts                Direct account encoding and decoding
+typescript/src/ChanceryEvent.ts                  Self-CPI evidence decoding
+typescript/src/SolanaTransaction.ts              Message compilation and signing
+typescript/src/SplToken.ts                       SPL Token and Token-2022 decoding
+
+python/chancery_reference/client.py              Operational Python client
+python/chancery_reference/discovery.py           Full state discovery and PDA verification
+python/chancery_reference/chancery_protocol.py   Chancery policy, fee, limit, and PDA rules
+python/chancery_reference/cli.py                 Python CLI
+python/chancery_reference/rpc.py                 JSON-RPC client
+python/chancery_reference/instruction.py         Direct instruction encoding
+python/chancery_reference/account.py             Direct account encoding and decoding
+python/chancery_reference/event.py               Self-CPI evidence decoding
+python/chancery_reference/solana_transaction.py  Message compilation and Ed25519 signing
+python/chancery_reference/spl_token.py           SPL Token and Token-2022 decoding
+
+typescript/examples/ReadOnlyIntegration.ts       Read-only TypeScript example
+typescript/examples/SettlementWorkflow.ts        Settlement TypeScript example
+python/examples/read_only_integration.py         Read-only Python example
+python/examples/settlement_workflow.py           Settlement Python example
+
+fixtures/wire-vectors.json                       Shared deterministic vectors
+BUILD-COMPATIBILITY.json                         Program, schema, and source binding
+CORRECTNESS-CONTRACT.md                          Consumer correctness boundary
+compatibility/VerifyBuildCompatibility.mjs       Node compatibility verifier
+compatibility/verify_build_compatibility.py      Python compatibility verifier
+compatibility/VerifyProgramData.mjs              Deployed ProgramData verifier
+integration/RunDirectSettlement.mjs              Live direct-settlement conformance gate
+integration/live-direct-settlement.example.json  Deployment configuration template
+VALIDATION.md                                    Distribution validation record
+MANIFEST.sha256                                  Per-file SHA-256 manifest
+```
+
+## Checked-in Chancery wire surface
+
+The schema contains:
+
+```text
+68 instructions
+22 fixed account layouts
+52 event layouts
+390 constants
+219 program errors
+```
+
+Instruction, account, and event encoding is direct and deterministic:
+
+- public keys are raw 32-byte values and base58 strings at API boundaries;
+- Chancery instruction discriminators are two bytes;
+- integers are little-endian in Chancery data;
+- options use one-byte tags;
+- Chancery vectors use four-byte little-endian lengths;
+- fixed accounts enforce exact declared sizes and explicit padding;
+- event data is decoded only from canonical Chancery self-CPI instructions.
+
+## Validation boundary
+
+The test fixtures exercise complete discovery, account decoding, PDA derivation, permission and policy resolution, directional rolling-limit calculations, transfer-fee-aware quotes, exact instruction accounts, transaction compilation, signing, simulation, submission, confirmation, and evidence decoding without requiring a private key or live endpoint in the repository.
+
+The archive does not claim a transaction was submitted to a live deployment. An external consumer must verify the target ProgramData, run `discover`, `inspect`, and `quote-mint` or `quote-redeem`, then pass the supplied direct-settlement conformance gate with authorized signers before enabling submission.
