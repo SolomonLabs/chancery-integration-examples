@@ -3,6 +3,11 @@ import { readFileSync } from "node:fs";
 import { webcrypto } from "node:crypto";
 import { encodeBase58 } from "./base58.mjs";
 import { buildChanceryInstruction } from "./chancery.mjs";
+import {
+    compileUnversionedMessage,
+    createUnsignedTransaction,
+    encodeShortVectorLength,
+} from "./solana-transaction.mjs";
 import { INSTRUCTION_TEMPLATES } from "./templates.mjs";
 import {
     buildSquadsProposal,
@@ -61,9 +66,18 @@ async function main() {
     assert.ok(squadsIdl.instructions.some((instruction) => instruction.name === "proposalCreate"));
     assert.ok(squadsIdl.instructions.some((instruction) => instruction.name === "vaultTransactionExecute"));
 
+    assert.deepEqual(
+        INSTRUCTION_TEMPLATES.map((template) => template.instructionName),
+        ["mint_direct", "mint_delegated", "mint_trilateral", "redeem_direct", "redeem_delegated", "redeem_trilateral"],
+    );
     for (const template of INSTRUCTION_TEMPLATES) {
         const instruction = schema.instructions[template.instructionName];
         assert.ok(instruction, template.id);
+        for (const accountName of Object.keys(template.accounts)) {
+            assert.ok(
+                instruction.accounts.find((account) => account.name === accountName)?.signer,
+                template.id + "." + accountName + " must be a signer");
+        }
         for (const argumentName of Object.keys(template.arguments)) {
             assert.ok(instruction.args.some((field) => field.name === argumentName), template.id + "." + argumentName);
         }
@@ -134,6 +148,42 @@ async function main() {
     assert.deepEqual(proposal.transactionMessage.addressTableLookups[0].writableIndexes, [0]);
     assert.equal(proposal.instructions.execution.accounts[4].address, lookupTable.address);
     assert.ok(proposal.transactionMessageBytes.length > chanceryInstruction.data.length);
+
+    assert.deepEqual([...encodeShortVectorLength(0)], [0]);
+    assert.deepEqual([...encodeShortVectorLength(127)], [127]);
+    assert.deepEqual([...encodeShortVectorLength(128)], [0x80, 0x01]);
+    assert.deepEqual([...encodeShortVectorLength(16383)], [0xff, 0x7f]);
+
+    const feePayer = address(13);
+    const blockhash = address(21);
+    const message = compileUnversionedMessage(proposal.instructions.creation, feePayer, blockhash);
+    assert.equal(message.version, "unversioned");
+    assert.equal(message.accountKeys[0], feePayer);
+    assert.deepEqual(message.signerAddresses, [feePayer, creatorAddress]);
+    assert.equal(message.numberOfRequiredSignatures, 2);
+    assert.equal(message.numberOfReadonlySignedAccounts, 0);
+    assert.equal(message.instructions.length, 2);
+    assert.deepEqual([...message.bytes.slice(0, 4)], [
+        message.numberOfRequiredSignatures,
+        message.numberOfReadonlySignedAccounts,
+        message.numberOfReadonlyUnsignedAccounts,
+        message.accountKeys.length,
+    ]);
+    const blockhashOffset = 4 + message.accountKeys.length * 32;
+    assert.equal(encodeBase58(message.bytes.slice(blockhashOffset, blockhashOffset + 32)), blockhash);
+    assert.equal(message.bytes[blockhashOffset + 32], 2);
+    for (const compiled of message.instructions) {
+        assert.equal(message.accountKeys[compiled.programIdIndex], SQUADS_MULTISIG_PROGRAM_ADDRESS);
+    }
+    const unsignedTransaction = createUnsignedTransaction(message);
+    assert.equal(unsignedTransaction.length, 1 + 64 * message.numberOfRequiredSignatures + message.bytes.length);
+    assert.equal(unsignedTransaction[0], message.numberOfRequiredSignatures);
+    assert.ok(unsignedTransaction.slice(1, 129).every((byte) => byte === 0));
+    assert.deepEqual([...unsignedTransaction.slice(129)], [...message.bytes]);
+
+    const directMessage = compileUnversionedMessage([chanceryInstruction], vault.address, blockhash);
+    assert.deepEqual(directMessage.signerAddresses, [vault.address]);
+    assert.equal(directMessage.accountKeys.at(-1), schema.program.address);
 
     process.stdout.write("instruction builder core tests passed\n");
 }

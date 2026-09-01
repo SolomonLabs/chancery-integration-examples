@@ -98,7 +98,7 @@ h1 {
 
 .controls-panel { grid-column: 1; }
 .form-panel { grid-column: 2; }
-.squads-panel, .output-panel { grid-column: 1 / -1; }
+.accounts-panel, .squads-panel, .transaction-panel, .output-panel { grid-column: 1 / -1; }
 
 .section-heading {
     display: flex;
@@ -141,6 +141,7 @@ h1 {
 
 .account-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .squads-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.transaction-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .field {
     display: flex;
@@ -249,6 +250,11 @@ input:focus, select:focus, textarea:focus {
     margin-left: auto;
 }
 
+.button-row select {
+    width: auto;
+    padding: 0.6rem 2rem 0.6rem 0.78rem;
+}
+
 button {
     border: 0;
     border-radius: 10px;
@@ -304,7 +310,7 @@ code {
     .page-header { align-items: flex-start; flex-direction: column; }
     .badges { justify-content: flex-start; }
     .layout { grid-template-columns: 1fr; }
-    .controls-panel, .form-panel, .squads-panel, .output-panel { grid-column: 1; }
+    .controls-panel, .form-panel, .accounts-panel, .squads-panel, .transaction-panel, .output-panel { grid-column: 1; }
     .squads-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -312,7 +318,7 @@ code {
     .page-header { padding: 2rem 1rem 1rem; }
     .layout { padding: 0 1rem 2rem; }
     .panel { padding: 1rem; border-radius: 14px; }
-    .field-grid, .account-grid, .squads-grid { grid-template-columns: 1fr; }
+    .field-grid, .account-grid, .squads-grid, .transaction-grid { grid-template-columns: 1fr; }
     .field-wide, .field-full { grid-column: 1; }
     .output-heading, .squads-heading { flex-wrap: wrap; }
     .button-row { width: 100%; margin-left: 0; }

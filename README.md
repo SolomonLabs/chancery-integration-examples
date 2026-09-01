@@ -707,7 +707,7 @@ The transaction index must be the next index expected by the target multisig. Th
 
 ## Static HTML/MJS instruction builder
 
-`web/instruction-builder/` is a build-free, dependency-free single-page application backed by the checked-in Chancery schema and Squads IDL. It provides templates for global pause, global pause-bit clearing, asset pause, direct mint, direct redeem, and settlement-intent creation, while retaining access to every Chancery instruction in the schema.
+`web/instruction-builder/` is a build-free, dependency-free single-page application backed by the checked-in Chancery schema and Squads IDL. It provides one template per settlement mode: `mint_direct`, `mint_delegated`, `mint_trilateral`, `redeem_direct`, `redeem_delegated`, and `redeem_trilateral`. Direct modes place the Squads vault as `principal`; delegated and trilateral modes place it as `executor`.
 
 Run it with either command:
 
@@ -724,7 +724,9 @@ Open `http://127.0.0.1:4173`. The application can:
 - substitute the selected Squads vault for `$SQUADS_VAULT` template values;
 - compile the Chancery instruction into a Squads vault proposal;
 - accept address lookup table contents when the proposal message requires them;
-- export account metas and instruction data as hexadecimal and base64 JSON.
+- export account metas and instruction data as hexadecimal and base64 JSON;
+- compile each instruction set into an unsigned legacy transaction when a fee payer is supplied, with a zero-blockhash placeholder unless a recent blockhash is entered;
+- export the generated JSON, or the unsigned transaction bytes of a selected phase (`chancery`, or `creation`, `activation`, `approval`, `execution` when wrapped), as base64 or base58 files.
 
 The application performs no RPC calls, wallet connection, signing, simulation, submission, approval, or execution. Its output is instruction-construction material for a separate authorized transaction pipeline.
 

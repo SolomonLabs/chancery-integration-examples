@@ -1,5 +1,7 @@
+import { encodeBase58 } from "./base58.mjs";
 import { buildChanceryInstruction, defaultInstructionAccountValue } from "./chancery.mjs";
 import { INSTRUCTION_TEMPLATES } from "./templates.mjs";
+import { compileUnversionedMessage, createUnsignedTransaction } from "./solana-transaction.mjs";
 import {
     buildSquadsProposal,
     deriveSquadsVaultAddress,
@@ -20,7 +22,6 @@ const elements = {
     squadsVersion: document.querySelector("#squads-version"),
     templateSelect: document.querySelector("#template-select"),
     templateDescription: document.querySelector("#template-description"),
-    instructionSelect: document.querySelector("#instruction-select"),
     verifyPdas: document.querySelector("#verify-pdas"),
     argumentsFields: document.querySelector("#arguments-fields"),
     accountsFields: document.querySelector("#accounts-fields"),
@@ -39,6 +40,11 @@ const elements = {
     proposalMemo: document.querySelector("#proposal-memo"),
     approvalMemo: document.querySelector("#approval-memo"),
     addressLookupTables: document.querySelector("#address-lookup-tables"),
+    feePayerAddress: document.querySelector("#fee-payer-address"),
+    recentBlockhash: document.querySelector("#recent-blockhash"),
+    exportPhase: document.querySelector("#export-phase"),
+    exportFormat: document.querySelector("#export-format"),
+    exportButton: document.querySelector("#export-button"),
     copyButton: document.querySelector("#copy-button"),
     generateButton: document.querySelector("#generate-button"),
     status: document.querySelector("#status"),
@@ -48,6 +54,7 @@ const elements = {
 let chancerySchema;
 let squadsIdl;
 let activeTemplate = INSTRUCTION_TEMPLATES[0];
+let generated = null;
 
 function setStatus(message, kind) {
     elements.status.textContent = message;
@@ -156,7 +163,7 @@ function renderAccounts(instruction, template) {
     clearChildren(elements.accountsFields);
     for (const account of instruction.accounts) {
         const label = document.createElement("label");
-        label.className = "field field-wide";
+        label.className = "field";
         const name = document.createElement("span");
         name.textContent = account.name;
         label.appendChild(name);
@@ -191,13 +198,10 @@ function templateById(templateId) {
     return template;
 }
 
-function renderSelectedInstruction(template) {
-    const instructionName = elements.instructionSelect.value;
-    const instruction = chancerySchema.instructions[instructionName];
-    if (instruction === undefined) throw new Error("Unknown Chancery instruction " + instructionName);
-    elements.templateDescription.textContent = template.description;
-    renderArguments(instruction, template);
-    renderAccounts(instruction, template);
+function selectedInstructionSchema() {
+    const instruction = chancerySchema.instructions[activeTemplate.instructionName];
+    if (instruction === undefined) throw new Error("Unknown Chancery instruction " + activeTemplate.instructionName);
+    return instruction;
 }
 
 function setSquadsEnabled(enabled) {
@@ -210,17 +214,12 @@ function setSquadsEnabled(enabled) {
 function applyTemplate(templateId) {
     activeTemplate = templateById(templateId);
     elements.templateSelect.value = activeTemplate.id;
-    elements.instructionSelect.value = activeTemplate.instructionName;
+    elements.templateDescription.textContent = activeTemplate.description;
     elements.wrapSquads.checked = activeTemplate.squads;
     setSquadsEnabled(activeTemplate.squads);
-    renderSelectedInstruction(activeTemplate);
-}
-
-function applyCustomInstruction() {
-    activeTemplate = templateById("custom");
-    elements.templateSelect.value = activeTemplate.id;
-    setSquadsEnabled(elements.wrapSquads.checked);
-    renderSelectedInstruction(activeTemplate);
+    const instruction = selectedInstructionSchema();
+    renderArguments(instruction, activeTemplate);
+    renderAccounts(instruction, activeTemplate);
 }
 
 function requiredValue(control, label) {
@@ -320,18 +319,31 @@ function readSquadsRequest() {
     };
 }
 
+function readTransactionRequest() {
+    const feePayerAddress = optionalValue(elements.feePayerAddress);
+    if (feePayerAddress === undefined) return undefined;
+    return {
+        feePayerAddress,
+        recentBlockhash: requiredValue(elements.recentBlockhash, "Recent blockhash"),
+    };
+}
+
+function compiledInstructionForJson(instruction) {
+    return {
+        programIdIndex: instruction.programIdIndex,
+        accountIndexes: instruction.accountIndexes,
+        dataHex: "0x" + bytesToHex(instruction.data),
+        dataBase64: bytesToBase64(instruction.data),
+    };
+}
+
 function transactionMessageForJson(message) {
     return {
         numSigners: message.numSigners,
         numWritableSigners: message.numWritableSigners,
         numWritableNonSigners: message.numWritableNonSigners,
         accountKeys: message.accountKeys,
-        instructions: message.instructions.map((instruction) => ({
-            programIdIndex: instruction.programIdIndex,
-            accountIndexes: instruction.accountIndexes,
-            dataHex: "0x" + bytesToHex(instruction.data),
-            dataBase64: bytesToBase64(instruction.data),
-        })),
+        instructions: message.instructions.map(compiledInstructionForJson),
         addressTableLookups: message.addressTableLookups,
     };
 }
@@ -353,14 +365,83 @@ function squadsBundleForJson(bundle) {
     };
 }
 
+function compileTransaction(instructions, transactionRequest) {
+    const message = compileUnversionedMessage(
+        instructions,
+        transactionRequest.feePayerAddress,
+        transactionRequest.recentBlockhash,
+    );
+    return {
+        message,
+        unsignedTransactionBytes: createUnsignedTransaction(message),
+    };
+}
+
+function transactionForJson(transaction, transactionRequest) {
+    return {
+        feePayer: transactionRequest.feePayerAddress,
+        recentBlockhash: transactionRequest.recentBlockhash,
+        message: {
+            version: transaction.message.version,
+            numberOfRequiredSignatures: transaction.message.numberOfRequiredSignatures,
+            numberOfReadonlySignedAccounts: transaction.message.numberOfReadonlySignedAccounts,
+            numberOfReadonlyUnsignedAccounts: transaction.message.numberOfReadonlyUnsignedAccounts,
+            accountKeys: transaction.message.accountKeys,
+            signerAddresses: transaction.message.signerAddresses,
+            instructions: transaction.message.instructions.map(compiledInstructionForJson),
+            bytesHex: "0x" + bytesToHex(transaction.message.bytes),
+            bytesBase64: bytesToBase64(transaction.message.bytes),
+        },
+        unsignedTransactionBase64: bytesToBase64(transaction.unsignedTransactionBytes),
+        unsignedTransactionBase58: encodeBase58(transaction.unsignedTransactionBytes),
+    };
+}
+
+function transactionPhases(chanceryInstruction, squadsBundle) {
+    if (squadsBundle === undefined) {
+        return [{ phase: "chancery", instructions: [chanceryInstruction] }];
+    }
+    const phases = [{ phase: "creation", instructions: squadsBundle.instructions.creation }];
+    if (squadsBundle.instructions.activation !== null) {
+        phases.push({ phase: "activation", instructions: [squadsBundle.instructions.activation] });
+    }
+    phases.push({ phase: "approval", instructions: [squadsBundle.instructions.approval] });
+    phases.push({ phase: "execution", instructions: [squadsBundle.instructions.execution] });
+    return phases;
+}
+
+function compileTransactions(phases, transactionRequest) {
+    const transactions = new Map();
+    for (const { phase, instructions } of phases) {
+        transactions.set(phase, compileTransaction(instructions, transactionRequest));
+    }
+    return transactions;
+}
+
+function transactionsForJson(transactions, transactionRequest) {
+    const value = {};
+    for (const [phase, transaction] of transactions) {
+        value[phase] = transactionForJson(transaction, transactionRequest);
+    }
+    return value;
+}
+
+function renderExportPhases(phases) {
+    clearChildren(elements.exportPhase);
+    for (const phase of phases) {
+        appendOption(elements.exportPhase, phase, phase);
+    }
+    elements.exportPhase.disabled = phases.length <= 1;
+}
+
 async function generate() {
     elements.generateButton.disabled = true;
     elements.copyButton.disabled = true;
+    elements.exportButton.disabled = true;
     setStatus("Generating deterministic instruction data.");
     try {
-        const instructionName = elements.instructionSelect.value;
-        const instructionSchema = chancerySchema.instructions[instructionName];
-        if (instructionSchema === undefined) throw new Error("Unknown Chancery instruction " + instructionName);
+        const instructionName = activeTemplate.instructionName;
+        const instructionSchema = selectedInstructionSchema();
         let squadsRequest;
         let vaultAddress;
         if (elements.wrapSquads.checked) {
@@ -370,6 +451,7 @@ async function generate() {
                 squadsRequest.vaultIndex,
             )).address;
         }
+        const transactionRequest = readTransactionRequest();
         const argumentsValue = readArguments(instructionSchema, vaultAddress);
         const accounts = readAccounts(instructionSchema, vaultAddress);
         const chanceryInstruction = await buildChanceryInstruction(
@@ -379,6 +461,7 @@ async function generate() {
             accounts,
             elements.verifyPdas.checked,
         );
+        let squadsBundle;
         let output;
         if (squadsRequest === undefined) {
             output = {
@@ -387,7 +470,7 @@ async function generate() {
                 instruction: instructionForJson(chanceryInstruction),
             };
         } else {
-            const squadsBundle = await buildSquadsProposal({
+            squadsBundle = await buildSquadsProposal({
                 ...squadsRequest,
                 instructions: [chanceryInstruction],
             });
@@ -398,14 +481,72 @@ async function generate() {
                 squads: squadsBundleForJson(squadsBundle),
             };
         }
-        elements.output.textContent = JSON.stringify(output, jsonReplacer, 2);
-        setStatus("Instruction data generated.", "success");
+        const phases = transactionPhases(chanceryInstruction, squadsBundle);
+        const transactions = transactionRequest === undefined
+            ? new Map()
+            : compileTransactions(phases, transactionRequest);
+        output.transactions = transactionRequest === undefined
+            ? null
+            : transactionsForJson(transactions, transactionRequest);
+        const outputText = JSON.stringify(output, jsonReplacer, 2);
+        generated = { instructionName, outputText, transactions };
+        renderExportPhases(phases.map((entry) => entry.phase));
+        elements.output.textContent = outputText;
+        setStatus(
+            transactionRequest === undefined
+                ? "Instruction data generated; supply a fee payer to compile transactions."
+                : "Instruction data and unsigned transactions generated.",
+            "success",
+        );
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         setStatus(message, "error");
     } finally {
         elements.generateButton.disabled = false;
         elements.copyButton.disabled = false;
+        elements.exportButton.disabled = false;
+    }
+}
+
+function downloadText(fileName, text, contentType) {
+    const url = URL.createObjectURL(new Blob([text], { type: contentType }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+}
+
+function exportOutput() {
+    try {
+        if (generated === null) throw new Error("Generate output before exporting");
+        const format = elements.exportFormat.value;
+        if (format === "json") {
+            downloadText(generated.instructionName + ".json", generated.outputText, "application/json");
+            setStatus("Exported JSON.", "success");
+            return;
+        }
+        const phase = elements.exportPhase.value;
+        const transaction = generated.transactions.get(phase);
+        if (transaction === undefined) {
+            throw new Error("Fee payer is required for transaction export; regenerate with a fee payer");
+        }
+        const bytes = transaction.unsignedTransactionBytes;
+        let text;
+        if (format === "base64") {
+            text = bytesToBase64(bytes);
+        } else if (format === "base58") {
+            text = encodeBase58(bytes);
+        } else {
+            throw new Error("Unknown export format " + format);
+        }
+        downloadText(generated.instructionName + "-" + phase + "." + format + ".txt", text + "\n", "text/plain");
+        setStatus("Exported " + phase + " transaction as " + format + ".", "success");
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setStatus(message, "error");
     }
 }
 
@@ -435,10 +576,6 @@ function populateSelectors() {
     for (const template of INSTRUCTION_TEMPLATES) {
         appendOption(elements.templateSelect, template.id, template.label);
     }
-    clearChildren(elements.instructionSelect);
-    for (const instructionName of Object.keys(chancerySchema.instructions)) {
-        appendOption(elements.instructionSelect, instructionName, instructionName);
-    }
 }
 
 async function loadJson(path) {
@@ -449,6 +586,7 @@ async function loadJson(path) {
 
 async function initialize() {
     setSquadsEnabled(false);
+    renderExportPhases([]);
     setStatus("Loading checked-in program interfaces.");
     try {
         [chancerySchema, squadsIdl] = await Promise.all([
@@ -467,19 +605,10 @@ async function initialize() {
     }
 }
 
-elements.templateSelect.addEventListener("change", () => {
-    const template = templateById(elements.templateSelect.value);
-    if (template.id === "custom") {
-        activeTemplate = template;
-        elements.templateDescription.textContent = template.description;
-        renderSelectedInstruction(template);
-        return;
-    }
-    applyTemplate(template.id);
-});
-elements.instructionSelect.addEventListener("change", applyCustomInstruction);
+elements.templateSelect.addEventListener("change", () => applyTemplate(elements.templateSelect.value));
 elements.wrapSquads.addEventListener("change", () => setSquadsEnabled(elements.wrapSquads.checked));
 elements.generateButton.addEventListener("click", generate);
+elements.exportButton.addEventListener("click", exportOutput);
 elements.copyButton.addEventListener("click", copyOutput);
 
 initialize();

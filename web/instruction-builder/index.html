@@ -11,7 +11,7 @@
         <div>
             <p class="eyebrow">Solana governance tooling</p>
             <h1>Chancery Instruction Builder</h1>
-            <p class="lede">Generate deterministic Chancery instructions and optionally wrap them in a Squads v4 vault proposal lifecycle.</p>
+            <p class="lede">Generate deterministic Chancery settlement instructions and optionally wrap them in a Squads v4 vault proposal lifecycle.</p>
         </div>
         <div class="badges" aria-label="Loaded interfaces">
             <span id="chancery-version" class="badge">Chancery schema</span>
@@ -24,19 +24,15 @@
             <div class="section-heading">
                 <span class="step">1</span>
                 <div>
-                    <h2>Template and instruction</h2>
-                    <p>Templates prefill intent; every checked-in instruction remains selectable.</p>
+                    <h2>Settlement mode</h2>
+                    <p>Each mode prefills the instruction, its arguments, and the Squads vault placement.</p>
                 </div>
             </div>
             <label class="field">
-                <span>Template</span>
+                <span>Mode</span>
                 <select id="template-select"></select>
             </label>
             <p id="template-description" class="field-note"></p>
-            <label class="field">
-                <span>Chancery instruction</span>
-                <select id="instruction-select"></select>
-            </label>
             <label class="check-field">
                 <input id="verify-pdas" type="checkbox" checked>
                 <span>Verify supplied derivable PDAs</span>
@@ -54,7 +50,7 @@
             <div id="arguments-fields" class="field-grid"></div>
         </section>
 
-        <section class="panel form-panel">
+        <section class="panel accounts-panel">
             <div class="section-heading">
                 <span class="step">3</span>
                 <div>
@@ -129,20 +125,47 @@
             </div>
         </section>
 
-        <section class="panel output-panel">
-            <div class="section-heading output-heading">
+        <section class="panel transaction-panel">
+            <div class="section-heading">
                 <span class="step">5</span>
                 <div>
-                    <h2>Generated instructions</h2>
-                    <p>Output contains account metas plus hexadecimal and base64 instruction data.</p>
+                    <h2>Transaction</h2>
+                    <p>Unsigned legacy transactions are compiled with the fee payer as first signer and zero-filled signature slots.</p>
+                </div>
+            </div>
+            <div class="field-grid transaction-grid">
+                <label class="field">
+                    <span>Fee payer <small>optional; required for transaction export</small></span>
+                    <input id="fee-payer-address" autocomplete="off" placeholder="Public key that signs and pays for the transaction">
+                </label>
+                <label class="field">
+                    <span>Recent blockhash <small>placeholder is the zero blockhash</small></span>
+                    <input id="recent-blockhash" autocomplete="off" value="11111111111111111111111111111111">
+                </label>
+            </div>
+        </section>
+
+        <section class="panel output-panel">
+            <div class="section-heading output-heading">
+                <span class="step">6</span>
+                <div>
+                    <h2>Generated output</h2>
+                    <p>JSON output contains account metas, instruction data, and unsigned transaction bytes.</p>
                 </div>
                 <div class="button-row">
+                    <select id="export-phase" aria-label="Transaction to export"></select>
+                    <select id="export-format" aria-label="Export format">
+                        <option value="json">JSON</option>
+                        <option value="base64">Base64</option>
+                        <option value="base58">Base58</option>
+                    </select>
+                    <button id="export-button" class="secondary-button" type="button">Export</button>
                     <button id="copy-button" class="secondary-button" type="button">Copy</button>
                     <button id="generate-button" class="primary-button" type="button">Generate</button>
                 </div>
             </div>
             <p id="status" class="status" role="status"></p>
-            <pre id="output" tabindex="0">Select a template and generate.</pre>
+            <pre id="output" tabindex="0">Select a mode and generate.</pre>
         </section>
     </main>
 
