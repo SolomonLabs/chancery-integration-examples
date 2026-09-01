@@ -28,7 +28,7 @@ tsc --outDir /tmp/chancery-integration-ts-build -p tsconfig.json
 node --test /tmp/chancery-integration-ts-build/typescript/test/*.test.js
 ```
 
-Result: **27 tests pass**. Strict typechecking passes. The compiled JavaScript tree loads its emitted Chancery schema and passes the same runtime tests.
+Result: **31 tests pass**. Strict typechecking passes. The compiled JavaScript tree loads its emitted Chancery schema and passes the same runtime tests.
 
 Coverage includes:
 
@@ -53,9 +53,30 @@ Coverage includes:
 - pathway, asset, counterparty, and executor limit-policy binding checks;
 - Token-2022 `TransferFeeConfig` decoding, epoch selection, ceiling division, and maximum-fee capping;
 - transfer-aware mint and redeem effective amounts, routed-fee receipt, all-in basis points, and effective output rate;
-- all 68 instructions, 22 fixed account layouts, 52 event layouts, 390 constants, and 219 program errors in the checked-in Chancery schema.
+- all 68 instructions, 22 fixed account layouts, 52 event layouts, 390 constants, and 219 program errors in the checked-in Chancery schema;
+- Squads vault, transaction, proposal, and ephemeral-signer PDA derivation;
+- Squads vault-message encoding, decoding, account ordering, address lookup table placement, and execution remaining accounts;
+- Squads proposal creation, optional activation, approval, and execution instruction construction;
+- Chancery authority instructions compiled with the Squads vault as the signer.
 
 The packaging environment used Node.js 22.16.0 and TypeScript 5.8.3 for these checks. The repository itself pins Node.js 24, Yarn 4.2.2, TypeScript 6.0.3, and `tsx` 4.21.0 for consumers.
+
+## Static instruction builder
+
+```bash
+node web/instruction-builder/test.mjs
+```
+
+Result: **instruction builder core tests pass**. The test loads the checked-in Chancery schema and Squads IDL, verifies every template against its declared instruction fields, constructs and PDA-verifies all 68 Chancery instructions, verifies the Squads program address and required lifecycle instructions, derives the vault PDA, compiles a Squads proposal with an address lookup table, and verifies the generated execution account order.
+
+Additional checks establish that:
+
+- `app.mjs` and `serve.mjs` pass Node syntax checking;
+- the local server returns the HTML, application module, Chancery schema, and Squads IDL and rejects a traversal request;
+- the browser and TypeScript encoders produce identical Squads vault-message bytes and lifecycle instructions for the same Chancery input;
+- both checked-in Squads TypeScript examples execute from compiled JavaScript and emit complete proposal bundles.
+
+The application was not connected to a wallet or live RPC endpoint and no proposal was submitted, approved, or executed.
 
 ## Python
 
@@ -106,9 +127,9 @@ The runner fails on inspection, simulation, submission, confirmation, or canonic
 
 - `typescript/chancery.schema.json` and `python/chancery_reference/chancery.schema.json` are byte-identical.
 - Both schema files have SHA-256 `135b5a6453250101a5c1ea3751bac6382efa32a6d88eeb815c721bf1fdb26aaa`.
-- The TypeScript runtime has no package dependencies.
+- The TypeScript runtime and static instruction builder have no package dependencies.
 - The Python runtime uses the standard library only.
-- Source scans enforce the Chancery-only scope and prohibited-package boundary.
+- Source scans enforce the prohibited-package boundary.
 - Generated dependency directories, Python caches, compiled output, keypairs, and environment files are excluded from the archive.
 - `MANIFEST.sha256` records every distributed file except the manifest itself.
 - The final archive is tested once with `unzip -t`, extracted once into a clean directory, compared byte-for-byte with the release tree, and verified against its archive SHA-256.

@@ -13,3 +13,4 @@ export * from "./client/ChanceryProtocol.js";
 export * from "./client/ChanceryClient.js";
 
 export * from "./client/ChanceryDiscovery.js";
+export * from "./squads/index.js";

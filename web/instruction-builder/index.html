@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chancery Instruction Builder</title>
+    <link rel="stylesheet" href="./application.css">
+</head>
+<body>
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">Solana governance tooling</p>
+            <h1>Chancery Instruction Builder</h1>
+            <p class="lede">Generate deterministic Chancery instructions and optionally wrap them in a Squads v4 vault proposal lifecycle.</p>
+        </div>
+        <div class="badges" aria-label="Loaded interfaces">
+            <span id="chancery-version" class="badge">Chancery schema</span>
+            <span id="squads-version" class="badge">Squads IDL</span>
+        </div>
+    </header>
+
+    <main class="layout">
+        <section class="panel controls-panel">
+            <div class="section-heading">
+                <span class="step">1</span>
+                <div>
+                    <h2>Template and instruction</h2>
+                    <p>Templates prefill intent; every checked-in instruction remains selectable.</p>
+                </div>
+            </div>
+            <label class="field">
+                <span>Template</span>
+                <select id="template-select"></select>
+            </label>
+            <p id="template-description" class="field-note"></p>
+            <label class="field">
+                <span>Chancery instruction</span>
+                <select id="instruction-select"></select>
+            </label>
+            <label class="check-field">
+                <input id="verify-pdas" type="checkbox" checked>
+                <span>Verify supplied derivable PDAs</span>
+            </label>
+        </section>
+
+        <section class="panel form-panel">
+            <div class="section-heading">
+                <span class="step">2</span>
+                <div>
+                    <h2>Arguments</h2>
+                    <p>Integer values are raw decimal units. Byte arrays accept <code>0x</code> hexadecimal.</p>
+                </div>
+            </div>
+            <div id="arguments-fields" class="field-grid"></div>
+        </section>
+
+        <section class="panel form-panel">
+            <div class="section-heading">
+                <span class="step">3</span>
+                <div>
+                    <h2>Accounts</h2>
+                    <p>Known Chancery PDAs and program accounts are populated automatically.</p>
+                </div>
+            </div>
+            <div id="accounts-fields" class="field-grid account-grid"></div>
+        </section>
+
+        <section class="panel squads-panel">
+            <div class="section-heading squads-heading">
+                <span class="step">4</span>
+                <div>
+                    <h2>Squads proposal</h2>
+                    <p>The transaction index must be the next index expected by the multisig.</p>
+                </div>
+                <label class="switch-field">
+                    <input id="wrap-squads" type="checkbox">
+                    <span>Wrap</span>
+                </label>
+            </div>
+            <div id="squads-fields" class="field-grid squads-grid">
+                <label class="field field-wide">
+                    <span>Multisig address</span>
+                    <input id="multisig-address" autocomplete="off" placeholder="Squads multisig PDA">
+                </label>
+                <label class="field field-wide">
+                    <span>Creator member</span>
+                    <input id="creator-address" autocomplete="off" placeholder="Member with Initiate permission">
+                </label>
+                <label class="field field-wide">
+                    <span>Rent payer <small>optional; defaults to creator</small></span>
+                    <input id="rent-payer-address" autocomplete="off">
+                </label>
+                <label class="field">
+                    <span>Transaction index</span>
+                    <input id="transaction-index" inputmode="numeric" value="1">
+                </label>
+                <label class="field">
+                    <span>Vault index</span>
+                    <input id="vault-index" inputmode="numeric" value="0">
+                </label>
+                <label class="field">
+                    <span>Ephemeral signers</span>
+                    <input id="ephemeral-signer-count" inputmode="numeric" value="0">
+                </label>
+                <label class="check-field proposal-draft">
+                    <input id="proposal-draft" type="checkbox">
+                    <span>Create as draft</span>
+                </label>
+                <label class="field field-wide">
+                    <span>Approval member <small>optional; defaults to creator</small></span>
+                    <input id="approval-member-address" autocomplete="off">
+                </label>
+                <label class="field field-wide">
+                    <span>Execution member <small>optional; defaults to creator</small></span>
+                    <input id="executor-member-address" autocomplete="off">
+                </label>
+                <label class="field field-wide">
+                    <span>Proposal memo <small>optional</small></span>
+                    <input id="proposal-memo">
+                </label>
+                <label class="field field-wide">
+                    <span>Approval memo <small>optional</small></span>
+                    <input id="approval-memo">
+                </label>
+                <label class="field field-full">
+                    <span>Address lookup tables <small>optional JSON</small></span>
+                    <textarea id="address-lookup-tables" rows="5" spellcheck="false" placeholder='[{"address":"...","addresses":["..."]}]'></textarea>
+                </label>
+            </div>
+        </section>
+
+        <section class="panel output-panel">
+            <div class="section-heading output-heading">
+                <span class="step">5</span>
+                <div>
+                    <h2>Generated instructions</h2>
+                    <p>Output contains account metas plus hexadecimal and base64 instruction data.</p>
+                </div>
+                <div class="button-row">
+                    <button id="copy-button" class="secondary-button" type="button">Copy</button>
+                    <button id="generate-button" class="primary-button" type="button">Generate</button>
+                </div>
+            </div>
+            <p id="status" class="status" role="status"></p>
+            <pre id="output" tabindex="0">Select a template and generate.</pre>
+        </section>
+    </main>
+
+    <script type="module" src="./app.mjs"></script>
+</body>
+</html>

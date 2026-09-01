@@ -1,0 +1,113 @@
+import { SQUADS_VAULT_TOKEN } from "./squads.mjs";
+
+const ZERO_BYTES_32 = "0x" + "00".repeat(32);
+
+export const INSTRUCTION_TEMPLATES = [
+    {
+        id: "global-pause",
+        label: "Global pause via Squads",
+        description: "Build set_global_pause with the Squads vault as authority.",
+        instructionName: "set_global_pause",
+        squads: true,
+        arguments: {
+            pause_bits: "1",
+            is_clear: "false",
+            reason_code: "0",
+            expires_at_slot: "0",
+        },
+        accounts: { authority: SQUADS_VAULT_TOKEN },
+    },
+    {
+        id: "global-unpause",
+        label: "Global pause-bit clear via Squads",
+        description: "Clear selected global pause bits through a Squads proposal.",
+        instructionName: "set_global_pause",
+        squads: true,
+        arguments: {
+            pause_bits: "1",
+            is_clear: "true",
+            reason_code: "0",
+            expires_at_slot: "0",
+        },
+        accounts: { authority: SQUADS_VAULT_TOKEN },
+    },
+    {
+        id: "asset-pause",
+        label: "Asset pause via Squads",
+        description: "Build set_asset_pause and derive its asset pause PDA from asset_mint.",
+        instructionName: "set_asset_pause",
+        squads: true,
+        arguments: {
+            pause_bits: "1",
+            is_clear: "false",
+            reason_code: "0",
+            expires_at_slot: "0",
+        },
+        accounts: {
+            payer: SQUADS_VAULT_TOKEN,
+            authority: SQUADS_VAULT_TOKEN,
+        },
+    },
+    {
+        id: "mint-direct",
+        label: "Direct mint via Squads vault",
+        description: "Build mint_direct with the Squads vault as the Chancery principal.",
+        instructionName: "mint_direct",
+        squads: true,
+        arguments: {
+            pathway_id: ZERO_BYTES_32,
+            asset_amount: "0",
+            minimum_issued_token_amount: "0",
+        },
+        accounts: { principal: SQUADS_VAULT_TOKEN },
+    },
+    {
+        id: "redeem-direct",
+        label: "Direct redeem via Squads vault",
+        description: "Build redeem_direct with the Squads vault as the Chancery principal.",
+        instructionName: "redeem_direct",
+        squads: true,
+        arguments: {
+            pathway_id: ZERO_BYTES_32,
+            issued_token_amount: "0",
+            minimum_asset_amount: "0",
+        },
+        accounts: { principal: SQUADS_VAULT_TOKEN },
+    },
+    {
+        id: "settlement-intent",
+        label: "Settlement intent via Squads",
+        description: "Build create_settlement_intent with the Squads vault as payer, creator, and principal A.",
+        instructionName: "create_settlement_intent",
+        squads: true,
+        arguments: {
+            intent_id: ZERO_BYTES_32,
+            pathway_id: ZERO_BYTES_32,
+            settlement_mode: "0",
+            settlement_action: "0",
+            principal_a: SQUADS_VAULT_TOKEN,
+            asset_amount: "0",
+            issued_token_amount: "0",
+            minimum_asset_amount: "0",
+            minimum_issued_token_amount: "0",
+            nonce: "0",
+            valid_after_unix_timestamp: "0",
+            expires_at_unix_timestamp: "0",
+            policy_id: ZERO_BYTES_32,
+            intent_hash: ZERO_BYTES_32,
+        },
+        accounts: {
+            payer: SQUADS_VAULT_TOKEN,
+            creator: SQUADS_VAULT_TOKEN,
+        },
+    },
+    {
+        id: "custom",
+        label: "Custom instruction",
+        description: "Select any checked-in Chancery instruction and provide its arguments and accounts.",
+        instructionName: "set_global_pause",
+        squads: false,
+        arguments: {},
+        accounts: {},
+    },
+];

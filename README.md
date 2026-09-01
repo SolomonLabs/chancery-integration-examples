@@ -1,6 +1,6 @@
 # Chancery Integration Examples
 
-Standalone TypeScript and Python clients for consuming the Chancery program directly through Solana JSON-RPC.
+Standalone TypeScript and Python clients for consuming the Chancery program directly through Solana JSON-RPC, plus dependency-free Squads v4 proposal builders and a static instruction generator.
 
 **Program address:** `ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz`
 
@@ -16,10 +16,11 @@ The read-only surface requires no authorization. `discover` and `decode-transact
 
 ## Intended consumers
 
-The clients serve two integration patterns:
+The repository serves three integration patterns:
 
 - **Read-only integrations** — indexers, oracles, reconciliation systems, risk and treasury reporting. These use `discover` to inventory deployment state and `decode-transaction` to read canonical self-CPI settlement evidence. No key material is required. See `typescript/examples/ReadOnlyIntegration.ts` and `python/examples/read_only_integration.py`.
 - **Settlement integrations** — a principal, a delegated executor, or a trilateral counterparty set holding an on-chain permission grant. These additionally use `inspect`, `quote-mint`, `quote-redeem`, `mint`, and `redeem`. See `typescript/examples/SettlementWorkflow.ts` and `python/examples/settlement_workflow.py`.
+- **Governance integrations** — Squads v4 members constructing vault transactions that contain one or more ordered Chancery instructions. See `typescript/examples/SquadsChanceryProposal.ts`, `typescript/examples/SquadsChanceryBatchProposal.ts`, and `web/instruction-builder/`.
 
 `--principal`, `--principal-b`, and `--executor` name the parties the program itself defines. They carry no meaning beyond the identities Chancery binds in a settlement.
 
@@ -617,7 +618,7 @@ if simulation.simulation.error is not None:
 
 ## Runnable examples
 
-Two examples per language, one for each integration pattern.
+Read-only and settlement examples are provided in both languages. TypeScript additionally includes single-instruction and multi-instruction Squads proposal examples.
 
 ### Read-only
 
@@ -668,6 +669,64 @@ yarn example:settlement:typescript
 | `SUBMIT` | no | Set to `true` to submit after a successful simulation. Otherwise the example stops at simulation. |
 
 The example exits `2` without simulating when the inspection is not `ready`, and prints every blocking issue.
+
+## Squads v4 proposal wrapping
+
+The TypeScript surface compiles one or more ordered Chancery instructions into the Squads vault-transaction message format and emits the complete proposal lifecycle without importing the Squads SDK:
+
+- Squads vault, vault-transaction, proposal, and ephemeral-signer PDA derivation;
+- deterministic vault-message account ordering and instruction compilation;
+- optional address lookup table placement;
+- `vaultTransactionCreate` and `proposalCreate` instructions;
+- optional `proposalActivate` for draft proposals;
+- `proposalApprove` and `vaultTransactionExecute` instructions;
+- execution remaining accounts in the order required by the compiled message.
+
+`buildSquadsProposalBundle` returns the derived addresses, decoded transaction message, encoded transaction-message bytes, and each lifecycle instruction. It does not connect to a wallet, submit a transaction, cast a vote, or execute a proposal.
+
+Single Chancery instruction:
+
+```bash
+SQUADS_MULTISIG_ADDRESS="$SQUADS_MULTISIG_ADDRESS" \
+SQUADS_CREATOR_ADDRESS="$SQUADS_CREATOR_ADDRESS" \
+SQUADS_TRANSACTION_INDEX=1 \
+yarn example:squads:typescript
+```
+
+Multiple Chancery instructions in one Squads vault transaction:
+
+```bash
+SQUADS_MULTISIG_ADDRESS="$SQUADS_MULTISIG_ADDRESS" \
+SQUADS_CREATOR_ADDRESS="$SQUADS_CREATOR_ADDRESS" \
+SQUADS_TRANSACTION_INDEX=1 \
+ASSET_MINT="$ASSET_MINT" \
+yarn example:squads-batch:typescript
+```
+
+The transaction index must be the next index expected by the target multisig. The default vault index is `0`. The examples print machine-readable instruction objects and do not submit them.
+
+## Static HTML/MJS instruction builder
+
+`web/instruction-builder/` is a build-free, dependency-free single-page application backed by the checked-in Chancery schema and Squads IDL. It provides templates for global pause, global pause-bit clearing, asset pause, direct mint, direct redeem, and settlement-intent creation, while retaining access to every Chancery instruction in the schema.
+
+Run it with either command:
+
+```bash
+yarn app:instructions
+# or
+node web/instruction-builder/serve.mjs
+```
+
+Open `http://127.0.0.1:4173`. The application can:
+
+- populate instruction arguments, fixed accounts, and known Chancery PDAs;
+- derive and optionally verify instruction-specific Chancery PDAs;
+- substitute the selected Squads vault for `$SQUADS_VAULT` template values;
+- compile the Chancery instruction into a Squads vault proposal;
+- accept address lookup table contents when the proposal message requires them;
+- export account metas and instruction data as hexadecimal and base64 JSON.
+
+The application performs no RPC calls, wallet connection, signing, simulation, submission, approval, or execution. Its output is instruction-construction material for a separate authorized transaction pipeline.
 
 ## Observation consistency
 
@@ -724,6 +783,7 @@ typescript/src/ChanceryAccount.ts                Direct account encoding and dec
 typescript/src/ChanceryEvent.ts                  Self-CPI evidence decoding
 typescript/src/SolanaTransaction.ts              Message compilation and signing
 typescript/src/SplToken.ts                       SPL Token and Token-2022 decoding
+typescript/src/squads/                            Squads v4 PDA, message, and proposal builders
 
 python/chancery_reference/client.py              Operational Python client
 python/chancery_reference/discovery.py           Full state discovery and PDA verification
@@ -738,6 +798,8 @@ python/chancery_reference/spl_token.py           SPL Token and Token-2022 decodi
 
 typescript/examples/ReadOnlyIntegration.ts       Read-only TypeScript example
 typescript/examples/SettlementWorkflow.ts        Settlement TypeScript example
+typescript/examples/SquadsChanceryProposal.ts     Single-instruction Squads proposal example
+typescript/examples/SquadsChanceryBatchProposal.ts Multi-instruction Squads proposal example
 python/examples/read_only_integration.py         Read-only Python example
 python/examples/settlement_workflow.py           Settlement Python example
 
@@ -749,6 +811,7 @@ compatibility/verify_build_compatibility.py      Python compatibility verifier
 compatibility/VerifyProgramData.mjs              Deployed ProgramData verifier
 integration/RunDirectSettlement.mjs              Live direct-settlement conformance gate
 integration/live-direct-settlement.example.json  Deployment configuration template
+web/instruction-builder/                          Static HTML/MJS instruction generator
 VALIDATION.md                                    Distribution validation record
 MANIFEST.sha256                                  Per-file SHA-256 manifest
 ```

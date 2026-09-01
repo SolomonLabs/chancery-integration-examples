@@ -13,7 +13,7 @@
     "build:typescript": "tsc --outDir dist",
     "test:typescript": "node --import tsx --test typescript/test/*.test.ts",
     "test:python": "python -m unittest discover -s python/tests -t python -p 'test_*.py'",
-    "test": "yarn typecheck && yarn test:typescript && yarn test:python",
+    "test": "yarn typecheck && yarn test:typescript && yarn test:instruction-builder && yarn test:python",
     "cli:typescript": "tsx typescript/src/client/cli.ts",
     "cli:python": "PYTHONPATH=python python -m chancery_reference.cli",
     "example:read-only:typescript": "tsx typescript/examples/ReadOnlyIntegration.ts",
@@ -22,13 +22,17 @@
     "example:settlement:python": "PYTHONPATH=python python python/examples/settlement_workflow.py",
     "verify:compatibility": "node compatibility/VerifyBuildCompatibility.mjs && python compatibility/verify_build_compatibility.py",
     "verify:program": "node compatibility/VerifyProgramData.mjs",
-    "integration:direct": "node integration/RunDirectSettlement.mjs"
+    "integration:direct": "node integration/RunDirectSettlement.mjs",
+    "example:squads:typescript": "tsx typescript/examples/SquadsChanceryProposal.ts",
+    "example:squads-batch:typescript": "tsx typescript/examples/SquadsChanceryBatchProposal.ts",
+    "app:instructions": "node web/instruction-builder/serve.mjs",
+    "test:instruction-builder": "node web/instruction-builder/test.mjs"
   },
   "devDependencies": {
     "@types/node": "25.0.1",
     "tsx": "4.21.0",
     "typescript": "6.0.3"
   },
-  "description": "Standalone TypeScript and Python Chancery integration reference clients.",
+  "description": "Standalone Chancery integration clients, Squads v4 proposal builders, and instruction generator.",
   "license": "MIT"
 }
