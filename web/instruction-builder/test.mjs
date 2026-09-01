@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { webcrypto } from "node:crypto";
-import { encodeBase58 } from "./base58.mjs";
+import { decodePublicKey, encodeBase58 } from "./base58.mjs";
 import { buildChanceryInstruction } from "./chancery.mjs";
 import {
     compileUnversionedMessage,
     createUnsignedTransaction,
     encodeShortVectorLength,
 } from "./solana-transaction.mjs";
+import { ASSET_MINTS, ISSUED_TOKEN_MINT } from "./mints.mjs";
 import { INSTRUCTION_TEMPLATES } from "./templates.mjs";
 import {
     buildSquadsProposal,
@@ -73,11 +74,13 @@ async function main() {
     for (const template of INSTRUCTION_TEMPLATES) {
         const instruction = schema.instructions[template.instructionName];
         assert.ok(instruction, template.id);
-        for (const accountName of Object.keys(template.accounts)) {
+        for (const accountName of template.vaultAccounts) {
             assert.ok(
                 instruction.accounts.find((account) => account.name === accountName)?.signer,
                 template.id + "." + accountName + " must be a signer");
         }
+        assert.equal(template.accounts.issued_token_mint, ISSUED_TOKEN_MINT, template.id);
+        assert.ok(instruction.accounts.some((account) => account.name === "asset_mint"), template.id + ".asset_mint");
         for (const argumentName of Object.keys(template.arguments)) {
             assert.ok(instruction.args.some((field) => field.name === argumentName), template.id + "." + argumentName);
         }
@@ -87,6 +90,12 @@ async function main() {
                 template.id + "." + accountName,
             );
         }
+    }
+
+    assert.equal(decodePublicKey(ISSUED_TOKEN_MINT).length, 32);
+    assert.deepEqual(ASSET_MINTS.map((mint) => mint.symbol), ["USDC", "USDT", "USDG", "PYUSD"]);
+    for (const mint of ASSET_MINTS) {
+        assert.equal(decodePublicKey(mint.address).length, 32, mint.symbol);
     }
 
     const instructionEntries = Object.entries(schema.instructions);

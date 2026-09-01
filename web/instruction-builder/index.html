@@ -9,7 +9,6 @@
 <body>
     <header class="page-header">
         <div>
-            <p class="eyebrow">Solana governance tooling</p>
             <h1>Chancery Instruction Builder</h1>
             <p class="lede">Generate deterministic Chancery settlement instructions and optionally wrap them in a Squads v4 vault proposal lifecycle.</p>
         </div>
@@ -25,7 +24,7 @@
                 <span class="step">1</span>
                 <div>
                     <h2>Settlement mode</h2>
-                    <p>Each mode prefills the instruction, its arguments, and the Squads vault placement.</p>
+                    <p>Each mode prefills the instruction, its arguments, and the issued token mint.</p>
                 </div>
             </div>
             <label class="field">
@@ -55,7 +54,7 @@
                 <span class="step">3</span>
                 <div>
                     <h2>Accounts</h2>
-                    <p>Known Chancery PDAs and program accounts are populated automatically.</p>
+                    <p>Known Chancery PDAs and program accounts are populated automatically. When wrapped, <code>$SQUADS_VAULT</code> resolves to the Squads vault.</p>
                 </div>
             </div>
             <div id="accounts-fields" class="field-grid account-grid"></div>
@@ -66,7 +65,7 @@
                 <span class="step">4</span>
                 <div>
                     <h2>Squads proposal</h2>
-                    <p>The transaction index must be the next index expected by the multisig.</p>
+                    <p>Optional. Leave unwrapped to export the bare instruction. The transaction index must be the next index expected by the multisig.</p>
                 </div>
                 <label class="switch-field">
                     <input id="wrap-squads" type="checkbox">

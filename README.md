@@ -707,7 +707,7 @@ The transaction index must be the next index expected by the target multisig. Th
 
 ## Static HTML/MJS instruction builder
 
-`web/instruction-builder/` is a build-free, dependency-free single-page application backed by the checked-in Chancery schema and Squads IDL. It provides one template per settlement mode: `mint_direct`, `mint_delegated`, `mint_trilateral`, `redeem_direct`, `redeem_delegated`, and `redeem_trilateral`. Direct modes place the Squads vault as `principal`; delegated and trilateral modes place it as `executor`.
+`web/instruction-builder/` is a build-free, dependency-free single-page application backed by the checked-in Chancery schema and Squads IDL. It provides one template per settlement mode: `mint_direct`, `mint_delegated`, `mint_trilateral`, `redeem_direct`, `redeem_delegated`, and `redeem_trilateral`. Every mode fixes `issued_token_mint` to `USDvUSpnhCr9yBgj3UyVrD239HRUv4RsHwH2FxsWuMk` and offers `asset_mint` as a selection of the USDC, USDT, USDG, and PYUSD mainnet mints. Squads wrapping is off by default; when enabled, direct modes place the Squads vault as `principal` and delegated and trilateral modes place it as `executor`.
 
 Run it with either command:
 

@@ -36,15 +36,6 @@ button, input, select, textarea { font: inherit; }
     padding: 3rem 2rem 1.5rem;
 }
 
-.eyebrow {
-    margin: 0 0 0.55rem;
-    color: var(--accent-strong);
-    font-size: 0.76rem;
-    font-weight: 750;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-}
-
 h1, h2, p { margin-top: 0; }
 
 h1 {
@@ -187,7 +178,7 @@ input:focus, select:focus, textarea:focus {
 
 .field-note {
     min-height: 2.6rem;
-    margin: -0.3rem 0 1rem;
+    margin: 0.2rem 0 1rem;
     color: var(--muted);
     font-size: 0.82rem;
     line-height: 1.5;
@@ -197,7 +188,7 @@ input:focus, select:focus, textarea:focus {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
-    margin-top: -0.15rem;
+    margin-top: 0.3rem;
 }
 
 .meta-chip {
@@ -208,6 +199,15 @@ input:focus, select:focus, textarea:focus {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.66rem;
 }
+
+.meta-chip[data-kind="signer"] { border-color: #b98a2f; background: rgba(236, 184, 79, 0.14); color: #f1cf78; }
+.meta-chip[data-kind="non-signer"] { border-color: #30394a; color: #8a95a6; }
+.meta-chip[data-kind="writable"] { border-color: #b3554f; background: rgba(255, 128, 120, 0.14); color: #ffb0aa; }
+.meta-chip[data-kind="read-only"] { border-color: #2f5a7a; background: rgba(93, 168, 224, 0.12); color: #9ccbf0; }
+.meta-chip[data-kind="required"] { border-color: #4a5fa8; background: rgba(138, 167, 255, 0.14); color: var(--accent-strong); }
+.meta-chip[data-kind="optional"] { border-color: #3a4352; color: #9ba7b8; }
+.meta-chip[data-kind="PDA"] { border-color: #2f7a55; background: rgba(116, 215, 165, 0.14); color: var(--success); }
+.meta-chip[data-kind="default"] { border-color: #6a4f9c; background: rgba(178, 140, 255, 0.14); color: #cdb8ff; }
 
 .check-field, .switch-field {
     display: inline-flex;

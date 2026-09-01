@@ -1,5 +1,6 @@
 import { encodeBase58 } from "./base58.mjs";
 import { buildChanceryInstruction, defaultInstructionAccountValue } from "./chancery.mjs";
+import { ASSET_MINTS } from "./mints.mjs";
 import { INSTRUCTION_TEMPLATES } from "./templates.mjs";
 import { compileUnversionedMessage, createUnsignedTransaction } from "./solana-transaction.mjs";
 import {
@@ -80,6 +81,7 @@ function appendMetadata(container, labels) {
     for (const label of labels) {
         const chip = document.createElement("span");
         chip.className = "meta-chip";
+        chip.dataset.kind = label;
         chip.textContent = label;
         metadata.appendChild(chip);
     }
@@ -159,6 +161,54 @@ function renderArguments(instruction, template) {
     }
 }
 
+function assetMintControl() {
+    const control = document.createElement("select");
+    for (const mint of ASSET_MINTS) {
+        appendOption(control, mint.address, mint.symbol + " " + mint.address);
+    }
+    return control;
+}
+
+function accountControl(account, template) {
+    if (account.name === "asset_mint") {
+        const control = assetMintControl();
+        control.dataset.accountName = account.name;
+        return control;
+    }
+    const input = document.createElement("input");
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    input.dataset.accountName = account.name;
+    const templateValue = template.accounts[account.name];
+    input.value = templateValue === undefined
+        ? defaultInstructionAccountValue(chancerySchema, account)
+        : inputText(templateValue);
+    if (account.pda !== undefined) {
+        input.placeholder = "Derived when all seed inputs are available";
+    } else if (account.optional) {
+        input.placeholder = "Optional account";
+    } else {
+        input.placeholder = "Required public key";
+    }
+    return input;
+}
+
+function accountInput(accountName) {
+    return elements.accountsFields.querySelector("[data-account-name=\"" + accountName + "\"]");
+}
+
+function applyVaultAccounts(wrapped) {
+    for (const accountName of activeTemplate.vaultAccounts) {
+        const control = accountInput(accountName);
+        if (control === null) continue;
+        if (wrapped) {
+            if (control.value.trim().length === 0) control.value = SQUADS_VAULT_TOKEN;
+        } else if (control.value.trim() === SQUADS_VAULT_TOKEN) {
+            control.value = "";
+        }
+    }
+}
+
 function renderAccounts(instruction, template) {
     clearChildren(elements.accountsFields);
     for (const account of instruction.accounts) {
@@ -167,22 +217,7 @@ function renderAccounts(instruction, template) {
         const name = document.createElement("span");
         name.textContent = account.name;
         label.appendChild(name);
-        const input = document.createElement("input");
-        input.autocomplete = "off";
-        input.spellcheck = false;
-        input.dataset.accountName = account.name;
-        const templateValue = template.accounts[account.name];
-        input.value = templateValue === undefined
-            ? defaultInstructionAccountValue(chancerySchema, account)
-            : inputText(templateValue);
-        if (account.pda !== undefined) {
-            input.placeholder = "Derived when all seed inputs are available";
-        } else if (account.optional) {
-            input.placeholder = "Optional account";
-        } else {
-            input.placeholder = "Required public key";
-        }
-        label.appendChild(input);
+        label.appendChild(accountControl(account, template));
         const labels = [account.signer ? "signer" : "non-signer", account.writable ? "writable" : "read-only"];
         labels.push(account.optional ? "optional" : "required");
         if (account.pda !== undefined) labels.push("PDA");
@@ -215,11 +250,10 @@ function applyTemplate(templateId) {
     activeTemplate = templateById(templateId);
     elements.templateSelect.value = activeTemplate.id;
     elements.templateDescription.textContent = activeTemplate.description;
-    elements.wrapSquads.checked = activeTemplate.squads;
-    setSquadsEnabled(activeTemplate.squads);
     const instruction = selectedInstructionSchema();
     renderArguments(instruction, activeTemplate);
     renderAccounts(instruction, activeTemplate);
+    applyVaultAccounts(elements.wrapSquads.checked);
 }
 
 function requiredValue(control, label) {
@@ -289,7 +323,7 @@ function readArguments(instruction, vaultAddress) {
 function readAccounts(instruction, vaultAddress) {
     const accounts = {};
     for (const account of instruction.accounts) {
-        const control = elements.accountsFields.querySelector("[data-account-name=\"" + account.name + "\"]");
+        const control = accountInput(account.name);
         if (control === null) throw new Error("Missing account control for " + account.name);
         const rawValue = replaceVaultToken(control.value.trim(), vaultAddress);
         if (rawValue.length > 0) accounts[account.name] = rawValue;
@@ -606,7 +640,10 @@ async function initialize() {
 }
 
 elements.templateSelect.addEventListener("change", () => applyTemplate(elements.templateSelect.value));
-elements.wrapSquads.addEventListener("change", () => setSquadsEnabled(elements.wrapSquads.checked));
+elements.wrapSquads.addEventListener("change", () => {
+    setSquadsEnabled(elements.wrapSquads.checked);
+    applyVaultAccounts(elements.wrapSquads.checked);
+});
 elements.generateButton.addEventListener("click", generate);
 elements.exportButton.addEventListener("click", exportOutput);
 elements.copyButton.addEventListener("click", copyOutput);
