@@ -15,17 +15,19 @@ The release tree contains the following settlement corrections in TypeScript and
 
 ## TypeScript
 
-The clean source tree was checked using the repository TypeScript configuration:
+The repository-selected installation and strict typecheck commands are:
 
 ```bash
-tsc --noEmit -p tsconfig.json
+corepack enable
+yarn install --immutable
+yarn typecheck
 ```
 
 The test suite was also compiled to JavaScript and run through the Node.js test runner:
 
 ```bash
-tsc --outDir /tmp/chancery-integration-ts-build -p tsconfig.json
-node --test /tmp/chancery-integration-ts-build/typescript/test/*.test.js
+yarn build:typescript
+node --test dist/typescript/test/*.test.js
 ```
 
 Result: **31 tests pass**. Strict typechecking passes. The compiled JavaScript tree loads its emitted Chancery schema and passes the same runtime tests.
@@ -64,7 +66,7 @@ The packaging environment used Node.js 22.16.0 and TypeScript 5.8.3 for these ch
 ## Static instruction builder
 
 ```bash
-node web/instruction-builder/test.mjs
+yarn test:instruction-builder
 ```
 
 Result: **instruction builder core tests pass**. The test loads the checked-in Chancery schema and Squads IDL, verifies every template against its declared instruction fields, constructs and PDA-verifies all 68 Chancery instructions, verifies the Squads program address and required lifecycle instructions, derives the vault PDA, compiles a Squads proposal with an address lookup table, and verifies the generated execution account order.
@@ -77,6 +79,16 @@ Additional checks establish that:
 - both checked-in Squads TypeScript examples execute from compiled JavaScript and emit complete proposal bundles.
 
 The application was not connected to a wallet or live RPC endpoint and no proposal was submitted, approved, or executed.
+
+## Command and example surface
+
+```bash
+yarn test:commands
+```
+
+Result: **command and example checks pass**. The gate validates every Yarn script and direct Node or Python path referenced by the Bash blocks in `README.md`, `VALIDATION.md`, and `integration/README.md`. It then executes the compiled TypeScript CLI help, deterministic `discover` and `decode-transaction` calls against a local JSON-RPC fixture, the compiled read-only example, both compiled Squads proposal examples, the instruction-builder server, the build compatibility verifier, the ProgramData verifier against deterministic upgradeable-loader account fixtures, and the direct-settlement runner help surface.
+
+Live ProgramData inspection and direct settlement are not executed by this gate because they require a deployed program, an RPC endpoint, and authorized signer material.
 
 ## Python
 

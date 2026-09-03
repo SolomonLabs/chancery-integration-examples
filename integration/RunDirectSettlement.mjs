@@ -137,7 +137,7 @@ function runTypeScript(argumentsList) {
 }
 
 function runPython(argumentsList) {
-    const executable = optionalString(config.pythonExecutable, "pythonExecutable") ?? "python3";
+    const executable = optionalString(config.pythonExecutable, "pythonExecutable") ?? "python";
     return runJson(
         executable,
         ["-m", "chancery_reference.cli", ...argumentsList],

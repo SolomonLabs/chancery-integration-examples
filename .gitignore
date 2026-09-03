@@ -1,4 +1,7 @@
 node_modules/
+dist/
+integration/live-direct-settlement.json
+*-keypair.json
 .pnp.*
 __pycache__/
 *.py[cod]

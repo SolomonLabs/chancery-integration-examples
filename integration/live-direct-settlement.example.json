@@ -5,7 +5,7 @@
   "principal": "REPLACE_WITH_PRINCIPAL_AUTHORITY",
   "pathwayId": "REPLACE_WITH_PATHWAY_ID",
   "signers": [
-    "./principal-keypair.json"
+    "../principal-keypair.json"
   ],
   "feePayer": "REPLACE_WITH_FEE_PAYER",
   "lookupTables": [],

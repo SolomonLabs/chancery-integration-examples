@@ -9,10 +9,10 @@
 
 Each submission must confirm and the other implementation must decode at least one canonical Chancery self-CPI event. The runner exits nonzero on inspection, simulation, submission, confirmation, or evidence-decoding failure.
 
-Copy `live-direct-settlement.example.json`, replace every placeholder, install the TypeScript development dependencies, and run:
+Copy `integration/live-direct-settlement.example.json` to `integration/live-direct-settlement.json`, replace every placeholder, install the TypeScript development dependencies, and run from the repository root:
 
 ```bash
-node integration/RunDirectSettlement.mjs ./live-direct-settlement.json
+yarn integration:direct integration/live-direct-settlement.json
 ```
 
-The configuration refers to keypair paths but does not contain key material. Do not add signer files to this repository.
+Relative keypair paths are resolved from the configuration file directory. The configuration refers to keypair paths but does not contain key material. Do not add signer files to this repository.

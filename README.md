@@ -67,7 +67,8 @@ corepack enable
 yarn install --immutable
 yarn typecheck
 yarn test:typescript
-yarn build:typescript
+yarn test:instruction-builder
+yarn test:commands
 ```
 
 ### Python
@@ -760,14 +761,14 @@ Inspect or enforce the deployed ProgramData binary hash:
 
 ```bash
 node compatibility/VerifyProgramData.mjs \
-  --rpc <RPC_URL> \
-  --expected-sha256 <PROGRAM_BINARY_SHA256>
+  --rpc "$RPC_URL" \
+  --expected-sha256 "$PROGRAM_BINARY_SHA256"
 ```
 
-Run the deployment-bound direct-settlement conformance gate after filling in the supplied configuration template:
+Run the deployment-bound direct-settlement conformance gate after copying `integration/live-direct-settlement.example.json` to `integration/live-direct-settlement.json` and filling in every placeholder:
 
 ```bash
-node integration/RunDirectSettlement.mjs ./live-direct-settlement.json
+yarn integration:direct integration/live-direct-settlement.json
 ```
 
 The runner submits TypeScript mint and redeem operations decoded by Python, followed by Python mint and redeem operations decoded by TypeScript.
@@ -813,6 +814,7 @@ compatibility/verify_build_compatibility.py      Python compatibility verifier
 compatibility/VerifyProgramData.mjs              Deployed ProgramData verifier
 integration/RunDirectSettlement.mjs              Live direct-settlement conformance gate
 integration/live-direct-settlement.example.json  Deployment configuration template
+validation/VerifyCommandExamples.mjs             Deterministic command and example gate
 web/instruction-builder/                          Static HTML/MJS instruction generator
 VALIDATION.md                                    Distribution validation record
 MANIFEST.sha256                                  Per-file SHA-256 manifest
