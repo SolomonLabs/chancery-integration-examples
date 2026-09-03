@@ -390,6 +390,7 @@ async function verifyInstructionBuilderServer() {
 }
 
 async function verifyReadOnlyCommands() {
+    const unknownAccountData = Buffer.alloc(8, 0xff).toString("base64");
     const server = createServer((request, response) => {
         let requestBody = "";
         request.setEncoding("utf8");
@@ -399,22 +400,24 @@ async function verifyReadOnlyCommands() {
         request.on("end", () => {
             try {
                 const payload = JSON.parse(requestBody);
-                let result;
                 if (payload.method === "getProgramAccounts") {
-                    result = [];
-                } else if (payload.method === "getTransaction") {
-                    result = null;
-                } else {
-                    response.writeHead(400, { "content-type": "application/json" });
-                    response.end(JSON.stringify({
-                        jsonrpc: "2.0",
-                        id: payload.id,
-                        error: { code: -32601, message: `Unsupported method ${String(payload.method)}` },
-                    }));
+                    response.writeHead(200, { "content-type": "application/json" });
+                    response.end(
+                        `{"jsonrpc":"2.0","id":${JSON.stringify(payload.id)},"result":[{"pubkey":"${PROGRAM_DATA_ADDRESS}","account":{"data":["${unknownAccountData}","base64"],"executable":false,"lamports":9007199254740993,"owner":"${CHANCERY_PROGRAM_ADDRESS}","rentEpoch":18446744073709551615,"space":8}}]}`,
+                    );
                     return;
                 }
-                response.writeHead(200, { "content-type": "application/json" });
-                response.end(JSON.stringify({ jsonrpc: "2.0", id: payload.id, result }));
+                if (payload.method === "getTransaction") {
+                    response.writeHead(200, { "content-type": "application/json" });
+                    response.end(JSON.stringify({ jsonrpc: "2.0", id: payload.id, result: null }));
+                    return;
+                }
+                response.writeHead(400, { "content-type": "application/json" });
+                response.end(JSON.stringify({
+                    jsonrpc: "2.0",
+                    id: payload.id,
+                    error: { code: -32601, message: `Unsupported method ${String(payload.method)}` },
+                }));
             } catch (error) {
                 response.writeHead(400, { "content-type": "application/json" });
                 response.end(JSON.stringify({
@@ -444,7 +447,10 @@ async function verifyReadOnlyCommands() {
         const discovery = parseJsonOutput(discoveryOutput, "TypeScript discover command");
         if (
             discovery.programAddress !== CHANCERY_PROGRAM_ADDRESS
-            || discovery.accountCount !== 0
+            || discovery.accountCount !== 1
+            || !Array.isArray(discovery.unrecognizedAccounts)
+            || discovery.unrecognizedAccounts.length !== 1
+            || discovery.unrecognizedAccounts[0]?.discriminatorHex !== "0xffffffffffffffff"
         ) {
             throw new Error("TypeScript discover command returned an unexpected result");
         }
@@ -467,7 +473,8 @@ async function verifyReadOnlyCommands() {
         const summary = parseJsonOutput(exampleOutput, "TypeScript read-only example");
         if (
             summary.programAddress !== CHANCERY_PROGRAM_ADDRESS
-            || summary.accountCount !== 0
+            || summary.accountCount !== 1
+            || summary.unrecognizedAccountCount !== 1
             || !Array.isArray(summary.assetMints)
             || !Array.isArray(summary.pathwayIds)
         ) {

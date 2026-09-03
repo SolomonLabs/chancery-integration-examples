@@ -38,7 +38,7 @@ Both clients provide the same operational surface:
 | `quote-redeem` | required | Build and sign the exact redeem transaction, then call `simulateTransaction` without submitting it. |
 | `redeem` | required | Inspect, build, sign, simulate, submit, confirm, fetch the transaction, and decode Chancery evidence. |
 
-Every command prints machine-readable JSON. TypeScript serializes `bigint` values as decimal strings. Python serializes integers as JSON numbers and byte arrays as `0x` hexadecimal strings.
+Every command prints machine-readable JSON. TypeScript preserves decimal JSON-RPC integers outside the JavaScript safe-integer range as `bigint` values and serializes `bigint` values as decimal strings. This includes the rent-exempt `rentEpoch` value `u64::MAX`. Python serializes integers as JSON numbers and byte arrays as `0x` hexadecimal strings.
 
 ## Runtime dependency boundary
 
@@ -781,6 +781,7 @@ typescript/src/client/ChanceryDiscovery.ts       Full state discovery and PDA ve
 typescript/src/client/ChanceryProtocol.ts        Chancery policy, fee, limit, and PDA rules
 typescript/src/client/cli.ts                     TypeScript CLI
 typescript/src/ChanceryRpc.ts                    JSON-RPC client
+typescript/src/JsonRpcCodec.ts                   Lossless JSON-RPC integer decoding
 typescript/src/ChanceryInstruction.ts            Direct instruction encoding
 typescript/src/ChanceryAccount.ts                Direct account encoding and decoding
 typescript/src/ChanceryEvent.ts                  Self-CPI evidence decoding

@@ -35,7 +35,7 @@ Inspection establishes a minimum RPC context slot, then reads the Clock sysvar a
 
 Policy activation, policy expiry, permissions, settlement intents, usage-window rollover, and extension freshness use the Clock timestamp and slot. Transaction preparation rejects an inspection after its expiry slot.
 
-RPC nodes do not provide an atomic multi-account historical snapshot for this workflow. `minContextSlot` prevents reads older than the recorded observation floor; simulation provides the execution-time state check.
+RPC nodes do not provide an atomic multi-account historical snapshot for this workflow. `minContextSlot` prevents reads older than the recorded observation floor; simulation provides the execution-time state check. The TypeScript transport preserves decimal JSON-RPC integers outside the JavaScript safe-integer range before account and status validation.
 
 ## Fee routing and reserve outflow
 

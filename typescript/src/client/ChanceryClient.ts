@@ -911,7 +911,7 @@ export class ChanceryClient {
     ): Promise<SubmittedSettlementTransaction> {
         const { prepared, simulation } = await this.simulateTransaction(inspection, request);
         if (simulation.err !== null) {
-            throw new Error(`Chancery transaction simulation failed: ${JSON.stringify(simulation.err)}`);
+            throw new Error(`Chancery transaction simulation failed: ${JSON.stringify(simulation.err, chanceryJsonReplacer)}`);
         }
         const commitment = request.commitment ?? this.#commitment;
         const signature = await this.#rpc.sendTransaction(prepared.transaction.bytes, commitment, false, 5);
@@ -1445,7 +1445,7 @@ export class ChanceryClient {
             const status = await this.#rpc.getSignatureStatus(signature);
             if (status !== null) {
                 if (status.err !== null) {
-                    throw new Error(`Transaction ${signature} failed: ${JSON.stringify(status.err)}`);
+                    throw new Error(`Transaction ${signature} failed: ${JSON.stringify(status.err, chanceryJsonReplacer)}`);
                 }
                 if (commitmentSatisfied(status.confirmationStatus, commitment)) {
                     return status;

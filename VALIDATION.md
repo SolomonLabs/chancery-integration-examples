@@ -30,7 +30,7 @@ yarn build:typescript
 node --test dist/typescript/test/*.test.js
 ```
 
-Result: **31 tests pass**. Strict typechecking passes. The compiled JavaScript tree loads its emitted Chancery schema and passes the same runtime tests.
+Result: **32 tests pass**. Strict typechecking passes. The compiled JavaScript tree loads its emitted Chancery schema and passes the same runtime tests.
 
 Coverage includes:
 
@@ -41,6 +41,7 @@ Coverage includes:
 - unversioned and version-zero message compilation;
 - address lookup tables and Ed25519 signing;
 - simulation, submission, confirmation, and confirmed-transaction retrieval through deterministic JSON-RPC fixtures;
+- exact preservation of unsafe decimal JSON-RPC integers, including account lamports and the rent-exempt `rentEpoch` value `u64::MAX`;
 - complete `getProgramAccounts` discovery and grouping across all 22 Chancery account layouts;
 - preservation of unknown Chancery-owned discriminators;
 - canonical address and stored-bump verification for every derivable Chancery PDA family;
@@ -86,7 +87,7 @@ The application was not connected to a wallet or live RPC endpoint and no propos
 yarn test:commands
 ```
 
-Result: **command and example checks pass**. The gate validates every Yarn script and direct Node or Python path referenced by the Bash blocks in `README.md`, `VALIDATION.md`, and `integration/README.md`. It then executes the compiled TypeScript CLI help, deterministic `discover` and `decode-transaction` calls against a local JSON-RPC fixture, the compiled read-only example, both compiled Squads proposal examples, the instruction-builder server, the build compatibility verifier, the ProgramData verifier against deterministic upgradeable-loader account fixtures, and the direct-settlement runner help surface.
+Result: **command and example checks pass**. The gate validates every Yarn script and direct Node or Python path referenced by the Bash blocks in `README.md`, `VALIDATION.md`, and `integration/README.md`. It then executes the compiled TypeScript CLI help, deterministic `discover` and `decode-transaction` calls against a local JSON-RPC fixture, the compiled read-only example, both compiled Squads proposal examples, the instruction-builder server, the build compatibility verifier, the ProgramData verifier against deterministic upgradeable-loader account fixtures, and the direct-settlement runner help surface. The discovery fixture includes raw JSON integer literals above `Number.MAX_SAFE_INTEGER` for lamports and `rentEpoch`.
 
 Live ProgramData inspection and direct settlement are not executed by this gate because they require a deployed program, an RPC endpoint, and authorized signer material.
 

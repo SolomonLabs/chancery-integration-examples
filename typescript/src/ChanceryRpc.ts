@@ -1,5 +1,6 @@
 import { normalizePublicKey } from "./Base58Codec.js";
-import { decodeBase64, encodeBase64 } from "./BinaryCodec.js";
+import { chanceryJsonReplacer, decodeBase64, encodeBase64 } from "./BinaryCodec.js";
+import { parseJsonRpcResponse } from "./JsonRpcCodec.js";
 import { decodeChanceryAccount, type DecodedChanceryAccount } from "./ChanceryAccount.js";
 import {
     decodeChanceryEventsFromRpcTransaction,
@@ -117,14 +118,16 @@ export class ChanceryRpc {
         if (!response.ok) {
             throw new Error(`RPC HTTP ${response.status}: ${response.statusText}`);
         }
-        const responseValue: unknown = (await response.json()) as unknown;
+        const responseValue = parseJsonRpcResponse(await response.text());
         if (typeof responseValue !== "object" || responseValue === null) {
             throw new Error("RPC response root must be an object");
         }
         const responseRecord = responseValue as Readonly<Record<string, unknown>>;
         if (responseRecord.error !== undefined) {
             const rpcError = parseRpcError(responseRecord.error);
-            const detail = rpcError.data === undefined ? "" : ` ${JSON.stringify(rpcError.data)}`;
+            const detail = rpcError.data === undefined
+                ? ""
+                : ` ${JSON.stringify(rpcError.data, chanceryJsonReplacer)}`;
             throw new Error(`RPC ${rpcError.code}: ${rpcError.message}${detail}`);
         }
         if (!("result" in responseRecord)) {
@@ -269,6 +272,9 @@ export class ChanceryRpc {
         const result = await this.request<unknown>("getBlockTime", [Number(slot)]);
         if (result === null) {
             return null;
+        }
+        if (typeof result === "bigint") {
+            return result;
         }
         if (typeof result === "number" && Number.isSafeInteger(result)) {
             return BigInt(result);
