@@ -14,7 +14,7 @@
     "test:typescript": "node --import tsx --test typescript/test/*.test.ts",
     "test:commands": "tsc --outDir dist && node validation/VerifyCommandExamples.mjs",
     "test:python": "python -m unittest discover -s python/tests -t python -p 'test_*.py'",
-    "test": "yarn typecheck && yarn test:typescript && yarn test:instruction-builder && yarn test:commands && yarn test:python",
+    "test": "yarn typecheck && yarn test:typescript && yarn test:integration:typescript && yarn test:instruction-builder && yarn test:commands && yarn test:python",
     "cli:typescript": "tsx typescript/src/client/cli.ts",
     "cli:python": "PYTHONPATH=python python -m chancery_reference.cli",
     "example:read-only:typescript": "tsx typescript/examples/ReadOnlyIntegration.ts",
@@ -27,13 +27,16 @@
     "example:squads:typescript": "tsx typescript/examples/SquadsChanceryProposal.ts",
     "example:squads-batch:typescript": "tsx typescript/examples/SquadsChanceryBatchProposal.ts",
     "app:instructions": "node web/instruction-builder/serve.mjs",
-    "test:instruction-builder": "node web/instruction-builder/test.mjs"
+    "test:instruction-builder": "node web/instruction-builder/test.mjs",
+    "test:integration:typescript": "node --experimental-strip-types --test integration/typescript/test/*.test.ts",
+    "example:integration:mint:typescript": "node --experimental-strip-types integration/typescript/examples/prepare_mint_inventory.ts integration/fixtures/direct-mint.operation.json",
+    "example:integration:redeem:typescript": "node --experimental-strip-types integration/typescript/examples/prepare_redeem_inventory.ts integration/fixtures/direct-redeem.operation.json"
   },
   "devDependencies": {
     "@types/node": "25.0.1",
     "tsx": "4.21.0",
     "typescript": "6.0.3"
   },
-  "description": "Standalone Chancery integration clients, Squads v4 proposal builders, and instruction generator.",
+  "description": "Standalone Chancery integration clients, Rust direct-settlement examples, market-maker adapters, Squads v4 proposal builders, and instruction generator.",
   "license": "MIT"
 }

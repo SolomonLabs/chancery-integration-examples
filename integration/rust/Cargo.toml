@@ -1,0 +1,11 @@
+[package]
+name = "chancery-market-maker-integration-rust"
+version = "1.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+chancery-reference = { path = "../../rust" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+solana-sdk = "2.3"

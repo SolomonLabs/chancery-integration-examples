@@ -35,7 +35,7 @@ Inspection establishes a minimum RPC context slot, then reads the Clock sysvar a
 
 Policy activation, policy expiry, permissions, settlement intents, usage-window rollover, and extension freshness use the Clock timestamp and slot. Transaction preparation rejects an inspection after its expiry slot.
 
-RPC nodes do not provide an atomic multi-account historical snapshot for this workflow. `minContextSlot` prevents reads older than the recorded observation floor; simulation provides the execution-time state check. The TypeScript transport preserves decimal JSON-RPC integers outside the JavaScript safe-integer range before account and status validation.
+RPC nodes provide independent account observations for this workflow. `minContextSlot` prevents reads older than the recorded observation floor; simulation provides the execution-time state check. The TypeScript transport preserves decimal JSON-RPC integers outside the JavaScript safe-integer range before account and status validation.
 
 ## Fee routing and reserve outflow
 
@@ -48,7 +48,7 @@ principal pre-transfer output
 + externally routed net fee
 ```
 
-A fee retained by the reserve is not counted as reserve outflow.
+A fee retained by the reserve contributes zero reserve outflow.
 
 ## Limits
 
@@ -73,4 +73,4 @@ The consumers decode Token-2022 transfer-fee configuration, select the active ep
 
 ## Deployment conformance
 
-`integration/RunDirectSettlement.mjs` executes direct mint and redeem through both implementations. Each confirmed transaction is decoded by the other implementation and must contain canonical Chancery self-CPI evidence. The runner requires an initialized deployment and authorized signer configuration; signer material is not included in the repository.
+`integration/RunDirectSettlement.mjs` executes direct mint and redeem through both implementations. Each confirmed transaction is decoded by the other implementation and must contain canonical Chancery self-CPI evidence. The runner uses an initialized deployment and authorized signer configuration supplied at execution time.

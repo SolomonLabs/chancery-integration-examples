@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chancery-market-maker-integration"
+version = "1.0.0"
+description = "Market-maker-facing Chancery direct mint and redeem integration"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["chancery_integration*"]

@@ -1,28 +1,27 @@
 # Chancery Integration Examples
 
-Standalone TypeScript and Python clients for consuming the Chancery program directly through Solana JSON-RPC, plus dependency-free Squads v4 proposal builders and a static instruction generator.
+Standalone TypeScript and Python reference clients, a top-level Rust direct-settlement example set, dependency-free Squads v4 proposal builders, a static instruction generator, and language-specific market-maker integrations.
 
 **Program address:** `ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz`
 
-The implementations do not import a Solana client framework or Solomon-owned Solana package. They implement public-key handling, PDA derivation, account codecs, instruction codecs, transaction messages, Ed25519 signing, token-state decoding, RPC calls, and Chancery evidence decoding directly.
+The TypeScript and Python reference implementations directly implement public-key handling, PDA derivation, account codecs, instruction codecs, transaction messages, Ed25519 signing, token-state decoding, RPC calls, and Chancery evidence decoding. The Rust example set uses public Rust crates for Solana instruction types.
 
 ## Access and authorization
 
-This repository grants no access to the Chancery program. It is integration reference material only.
+Chancery enforces authorization on-chain through `PermissionRecord` role bits, pathway policy, asset mode, module activation, and pause state. State-changing integrations use an approved permission record, eligible pathway, and associated policy configuration.
 
-Authorization is held on-chain and governed separately. Every state-changing instruction is checked by the program against `PermissionRecord` role bits, pathway policy, asset mode, module activation, and pause state. A caller without a permission record and an eligible pathway can construct a transaction with these clients and the program will reject it. Obtaining a permission grant, a pathway, and the associated policy configuration is a governance process outside this repository.
-
-The read-only surface requires no authorization. `discover` and `decode-transaction` use public RPC data and no signing key.
+`discover` and `decode-transaction` consume public RPC data. Settlement commands use the signers required by the selected pathway.
 
 ## Intended consumers
 
-The repository serves three integration patterns:
+The repository serves four integration patterns:
 
-- **Read-only integrations** — indexers, oracles, reconciliation systems, risk and treasury reporting. These use `discover` to inventory deployment state and `decode-transaction` to read canonical self-CPI settlement evidence. No key material is required. See `typescript/examples/ReadOnlyIntegration.ts` and `python/examples/read_only_integration.py`.
+- **Read-only integrations** — indexers, oracles, reconciliation systems, risk and treasury reporting. These use `discover` to inventory deployment state and `decode-transaction` to read canonical self-CPI settlement evidence from public RPC data. See `typescript/examples/ReadOnlyIntegration.ts` and `python/examples/read_only_integration.py`.
 - **Settlement integrations** — a principal, a delegated executor, or a trilateral counterparty set holding an on-chain permission grant. These additionally use `inspect`, `quote-mint`, `quote-redeem`, `mint`, and `redeem`. See `typescript/examples/SettlementWorkflow.ts` and `python/examples/settlement_workflow.py`.
 - **Governance integrations** — Squads v4 members constructing vault transactions that contain one or more ordered Chancery instructions. See `typescript/examples/SquadsChanceryProposal.ts`, `typescript/examples/SquadsChanceryBatchProposal.ts`, and `web/instruction-builder/`.
+- **External market-maker integrations:** authorized market makers, minting entities, redemption counterparties, and treasury systems embedding `mint_direct` and `redeem_direct` in their existing transaction, custody, and reconciliation systems. See `integration/` and the top-level `rust/` reference.
 
-`--principal`, `--principal-b`, and `--executor` name the parties the program itself defines. They carry no meaning beyond the identities Chancery binds in a settlement.
+`--principal`, `--principal-b`, and `--executor` map directly to the identities Chancery binds in a settlement.
 
 ## Client capabilities
 
@@ -33,28 +32,20 @@ Both clients provide the same operational surface:
 | `discover` | not required | Fetch and decode the complete Chancery-owned account set, group all account types, verify canonical PDAs and stored bumps, and link assets, pathways, fees, limits, evidence policies, and reserve destinations. |
 | `decode-transaction` | not required | Fetch a confirmed transaction and decode canonical Chancery self-CPI evidence from `meta.innerInstructions`. |
 | `inspect` | not required | Resolve one mint or redeem operation, including identities, permissions, policies, windows, balances, token accounts, PDAs, rates, fees, transfer-fee effects, and blocking conditions. |
-| `quote-mint` | required | Build and sign the exact mint transaction, then call `simulateTransaction` without submitting it. |
+| `quote-mint` | required | Build and sign the exact mint transaction, call `simulateTransaction`, and return the simulation result. |
 | `mint` | required | Inspect, build, sign, simulate, submit, confirm, fetch the transaction, and decode Chancery evidence. |
-| `quote-redeem` | required | Build and sign the exact redeem transaction, then call `simulateTransaction` without submitting it. |
+| `quote-redeem` | required | Build and sign the exact redeem transaction, call `simulateTransaction`, and return the simulation result. |
 | `redeem` | required | Inspect, build, sign, simulate, submit, confirm, fetch the transaction, and decode Chancery evidence. |
 
 Every command prints machine-readable JSON. TypeScript preserves decimal JSON-RPC integers outside the JavaScript safe-integer range as `bigint` values and serializes `bigint` values as decimal strings. This includes the rent-exempt `rentEpoch` value `u64::MAX`. Python serializes integers as JSON numbers and byte arrays as `0x` hexadecimal strings.
 
-## Runtime dependency boundary
+## Runtime foundations
 
-TypeScript runtime dependencies: **none**. It uses Node.js built-ins, `fetch`, and `Uint8Array`. `typescript`, `tsx`, and Node type definitions are development dependencies only. `yarn build:typescript` emits the JSON schema beside the compiled JavaScript so the output runs without the source tree.
+The TypeScript runtime uses Node.js built-ins, `fetch`, and `Uint8Array`. `typescript`, `tsx`, and Node type definitions support development and compilation. `yarn build:typescript` emits the JSON schema beside the compiled JavaScript.
 
-Python package dependencies: **none**. It uses the Python standard library, including a direct Ed25519 implementation for Solana transaction signing.
+The Python runtime uses the standard library, including its direct Ed25519 implementation for Solana transaction signing.
 
-The repository does not import:
-
-```text
-@solana/web3.js
-@coral-xyz/anchor
-@solana/kit
-Metaplex packages
-@solomon-labs/solana packages
-```
+The Rust reference set uses public Rust crates and returns `solana_sdk::instruction::Instruction` for direct mint and redeem operations. Host applications place those instructions into their RPC, signing, submission, and confirmation pipelines.
 
 ## Install and validate
 
@@ -81,6 +72,22 @@ PYTHONPATH=python python -m unittest discover \
   -t python \
   -p 'test_*.py'
 ```
+
+### Rust direct-settlement reference
+
+Requirements: Rust 1.85 or newer.
+
+```bash
+cargo test --manifest-path rust/Cargo.toml
+```
+
+### Market-maker TypeScript adapter
+
+```bash
+yarn test:integration:typescript
+```
+
+The Rust examples and all external market-maker adapters are documented in `rust/README.md` and `integration/README.md`.
 
 ## 1. Discover the complete Chancery state
 
@@ -165,7 +172,7 @@ usage-window
 
 They also report the fixed Chancery config, module activation, pause, issued-token control, event authority, mint authority, and reserve authority PDAs.
 
-`RemoteNonce` does not store `remote_chain_kind` in its account data. Discovery links it to `RemoteDomainPolicy` accounts with the same domain ID, derives each candidate using the policy’s chain-kind byte, and verifies the candidate that matches the nonce account address. If no unique policy linkage exists, the client does not invent a canonical result.
+`RemoteNonce` account data omits `remote_chain_kind`. Discovery links it to `RemoteDomainPolicy` accounts with the same domain ID, derives each candidate using the policy's chain-kind byte, and verifies the candidate that matches the nonce account address. Ambiguous policy linkage produces an unresolved canonical result.
 
 ## 2. Decode Chancery self-CPI evidence
 
@@ -250,7 +257,7 @@ The client fetches `PathwayPolicy` accounts by discriminator and exact account s
 - pathway status;
 - canonical pathway PDA.
 
-Zero eligible pathways is an error. Multiple eligible pathways require `--pathway-id`; the client does not select one arbitrarily.
+Zero eligible pathways is an error. One eligible pathway proceeds automatically. Multiple eligible pathways require `--pathway-id`.
 
 ### State and account resolution
 
@@ -280,9 +287,9 @@ Zero eligible pathways is an error. Multiple eligible pathways require `--pathwa
 - every derived PDA, bump, and seed sequence;
 - all blocking issues and the final `ready` result.
 
-Explicit token-account overrides are accepted, but each override is checked against the required mint, owner, and token program. Without an override, the client tries the canonical associated token account and then accepts a non-associated account only when the owner/mint query produces a unique result.
+Explicit token-account overrides are accepted, and each override is checked against the required mint, owner, and token program. In their absence, the client tries the canonical associated token account and then accepts a non-associated account when the owner/mint query produces a unique result.
 
-The reference client does not create token accounts. Missing required accounts are reported as blocking issues.
+Callers supply existing token accounts. Missing required accounts are reported as blocking issues.
 
 ## 4. Calculate remaining limits correctly
 
@@ -305,7 +312,7 @@ For hourly, daily, seven-day, and thirty-day windows, the client calculates the 
 
 - A stored window from an earlier period is treated as rolled to zero before checking the proposed operation.
 - A stored window start after the canonical current period is a clock-regression blocking issue.
-- An enforced window whose PDA account does not exist is a blocking issue.
+- A missing PDA account for an enforced window is a blocking issue.
 
 For each window, the report includes:
 
@@ -336,9 +343,9 @@ The settlement report evaluates:
 - trilateral counterparty policies: separate principal-A and principal-B daily windows;
 - executor policy: per-transaction and daily cap, using the zero-key template policy and a concrete executor window.
 
-The client fails closed when a dimension policy has the wrong scope kind, wrong scope key, unsupported hourly/seven-day/thirty-day/action-count caps, or a delegated counterparty policy without the required daily cap.
+The client fails closed when a dimension policy has the wrong scope kind, wrong scope key, unsupported hourly/seven-day/thirty-day/action-count caps, or a delegated counterparty policy missing its required daily cap.
 
-There is no separate Chancery global settlement-volume accumulator. The global control at settlement time is `PauseState`; volume containment is enforced through the four dimensions above.
+Global settlement control uses `PauseState`; volume containment is enforced through the four dimensions above.
 
 ## 5. Calculate rates, Chancery fees, and transfer-aware effective amounts
 
@@ -383,7 +390,7 @@ effective output rate e9
 
 For Token-2022 collateral with `TransferFeeConfig`, the client selects the active fee schedule for the current epoch, applies ceiling division and the maximum-fee cap, and calculates the amount the reserve is expected to receive. Chancery issuance is calculated from that reserve-received amount.
 
-Minted issued tokens are credited directly through `mint_to`, so the asset transfer-fee configuration does not reduce the issued-token destination amount.
+Minted issued tokens are credited directly through `mint_to`; the issued-token destination receives the minted amount independently of the asset transfer-fee configuration.
 
 ### Redeem
 
@@ -412,7 +419,7 @@ A mint fee policy must use issued-token denomination. A redeem fee policy must u
 
 ### Exactness boundary
 
-The local result is exact for supported SPL Token and Token-2022 transfer-fee behavior at the fetched epoch and account state. A mint with an unavailable mint account or an extension whose received amount cannot be modeled locally is marked `requiresSimulationForExactAmount` / `requires_simulation_for_exact_amount`.
+The local result is exact for supported SPL Token and Token-2022 transfer-fee behavior at the fetched epoch and account state. An unavailable mint account or an extension requiring execution-time amount evaluation sets `requiresSimulationForExactAmount` / `requires_simulation_for_exact_amount`.
 
 Transaction simulation remains the program-authoritative check against the current slot, current account state, transfer-hook behavior, CPI results, and concurrent state changes.
 
@@ -669,11 +676,34 @@ yarn example:settlement:typescript
 | `LOOKUP_TABLES` | no | Comma-separated address lookup tables for version-zero messages. |
 | `SUBMIT` | no | Set to `true` to submit after a successful simulation. Otherwise the example stops at simulation. |
 
-The example exits `2` without simulating when the inspection is not `ready`, and prints every blocking issue.
+An inspection status other than `ready` causes exit `2` before simulation and prints every blocking issue.
+
+## Rust and market-maker direct-settlement examples
+
+The existing top-level TypeScript, Python, and web examples remain unchanged. The top-level `rust/` crate adds typed builders, strict operation-document parsing, normalized instruction output, mint and redeem examples, and shared wire-vector tests for `mint_direct` and `redeem_direct`.
+
+The `integration/` directory contains separate market-maker-facing packages for TypeScript, Python, and Rust. These packages accept a current approved account bundle and operation values, construct one direct-settlement instruction, and expose a host boundary for transaction preparation, exact-transaction simulation, submission, confirmation, and reconciliation.
+
+Start with:
+
+- `integration/README.md` for the directory map and quick starts;
+- `integration/MARKET-MAKER-INTEGRATION.md` for the system boundary;
+- `integration/OPERATION-DOCUMENT.md` for the cross-language input contract;
+- `integration/DIRECT-SETTLEMENT.md` for exact wire layout; and
+- `integration/PRODUCTION-OPERATIONS.md` for operational controls.
+
+TypeScript market-maker preparation examples can be run from the repository root:
+
+```bash
+yarn example:integration:mint:typescript
+yarn example:integration:redeem:typescript
+```
+
+The checked-in fixtures are synthetic. The preparation examples emit normalized instructions for the host signing and submission pipeline.
 
 ## Squads v4 proposal wrapping
 
-The TypeScript surface compiles one or more ordered Chancery instructions into the Squads vault-transaction message format and emits the complete proposal lifecycle without importing the Squads SDK:
+The TypeScript surface directly encodes one or more ordered Chancery instructions into the Squads vault-transaction message format and emits the complete proposal lifecycle:
 
 - Squads vault, vault-transaction, proposal, and ephemeral-signer PDA derivation;
 - deterministic vault-message account ordering and instruction compilation;
@@ -683,7 +713,7 @@ The TypeScript surface compiles one or more ordered Chancery instructions into t
 - `proposalApprove` and `vaultTransactionExecute` instructions;
 - execution remaining accounts in the order required by the compiled message.
 
-`buildSquadsProposalBundle` returns the derived addresses, decoded transaction message, encoded transaction-message bytes, and each lifecycle instruction. It does not connect to a wallet, submit a transaction, cast a vote, or execute a proposal.
+`buildSquadsProposalBundle` returns the derived addresses, decoded transaction message, encoded transaction-message bytes, and each lifecycle instruction. The host wallet handles proposal submission, voting, and execution.
 
 Single Chancery instruction:
 
@@ -704,7 +734,7 @@ ASSET_MINT="$ASSET_MINT" \
 yarn example:squads-batch:typescript
 ```
 
-The transaction index must be the next index expected by the target multisig. The default vault index is `0`. The examples print machine-readable instruction objects and do not submit them.
+The transaction index must be the next index expected by the target multisig. The default vault index is `0`. The examples print machine-readable instruction objects for host submission.
 
 ## Static HTML/MJS instruction builder
 
@@ -729,7 +759,7 @@ Open `http://127.0.0.1:4173`. The application can:
 - compile each instruction set into an unsigned legacy transaction when a fee payer is supplied, with a zero-blockhash placeholder unless a recent blockhash is entered;
 - export the generated JSON, or the unsigned transaction bytes of a selected phase (`chancery`, or `creation`, `activation`, `approval`, `execution` when wrapped), as base64 or base58 files.
 
-The application performs no RPC calls, wallet connection, signing, simulation, submission, approval, or execution. Its output is instruction-construction material for a separate authorized transaction pipeline.
+The application emits instruction-construction material for an authorized host transaction pipeline that provides RPC access, wallet connection, signing, simulation, submission, approval, and execution.
 
 ## Observation consistency
 
@@ -744,7 +774,7 @@ expiry slot
 timestamp source
 ```
 
-Usage-window rollover, policy activation and expiry, permission expiry, settlement-intent expiry, and extension-observation freshness use the Clock values. Transaction preparation rejects an inspection after its expiry slot. Simulation remains the execution-time authority because Solana JSON-RPC does not provide an atomic historical snapshot across every account in this workflow.
+Usage-window rollover, policy activation and expiry, permission expiry, settlement-intent expiry, and extension-observation freshness use the Clock values. Transaction preparation rejects an inspection after its expiry slot. Solana JSON-RPC supplies independent account observations, and simulation provides the execution-time state check.
 
 ## Build and deployment binding
 
@@ -807,6 +837,19 @@ typescript/examples/SquadsChanceryBatchProposal.ts Multi-instruction Squads prop
 python/examples/read_only_integration.py         Read-only Python example
 python/examples/settlement_workflow.py           Settlement Python example
 
+rust/src/direct_settlement.rs                   Typed Rust direct mint and redeem builders
+rust/examples/                                   Rust instruction construction examples
+rust/tests/                                      Rust wire-vector tests
+
+integration/typescript/                         TypeScript market-maker adapter
+integration/python/                             Python market-maker adapter
+integration/rust/                               Rust market-maker adapter
+integration/fixtures/                           Shared direct-settlement operation fixtures
+integration/MARKET-MAKER-INTEGRATION.md         External onboarding and workflow boundary
+integration/OPERATION-DOCUMENT.md               Strict cross-language operation document
+integration/DIRECT-SETTLEMENT.md                Direct instruction wire contract
+integration/PRODUCTION-OPERATIONS.md            Submission and reconciliation requirements
+
 fixtures/wire-vectors.json                       Shared deterministic vectors
 BUILD-COMPATIBILITY.json                         Program, schema, and source binding
 CORRECTNESS-CONTRACT.md                          Consumer correctness boundary
@@ -845,6 +888,6 @@ Instruction, account, and event encoding is direct and deterministic:
 
 ## Validation boundary
 
-The test fixtures exercise complete discovery, account decoding, PDA derivation, permission and policy resolution, directional rolling-limit calculations, transfer-fee-aware quotes, exact instruction accounts, transaction compilation, signing, simulation, submission, confirmation, and evidence decoding without requiring a private key or live endpoint in the repository.
+The test fixtures exercise complete discovery, account decoding, PDA derivation, permission and policy resolution, directional rolling-limit calculations, transfer-fee-aware quotes, exact instruction accounts, transaction compilation, signing, simulation, submission, confirmation, and evidence decoding with deterministic local inputs.
 
-The archive does not claim a transaction was submitted to a live deployment. An external consumer must verify the target ProgramData, run `discover`, `inspect`, and `quote-mint` or `quote-redeem`, then pass the supplied direct-settlement conformance gate with authorized signers before enabling submission.
+Live deployment acceptance requires target ProgramData verification, `discover`, `inspect`, `quote-mint` or `quote-redeem`, and the supplied direct-settlement conformance gate with authorized signers.

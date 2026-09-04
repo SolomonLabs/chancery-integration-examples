@@ -1,0 +1,17 @@
+{
+  "name": "chancery-market-maker-integration-typescript",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "example:wire:mint": "node --experimental-strip-types examples/build_mint.ts ../fixtures/direct-mint.operation.json",
+    "example:wire:redeem": "node --experimental-strip-types examples/build_redeem.ts ../fixtures/direct-redeem.operation.json",
+    "example:mint": "node --experimental-strip-types examples/prepare_mint_inventory.ts ../fixtures/direct-mint.operation.json",
+    "example:redeem": "node --experimental-strip-types examples/prepare_redeem_inventory.ts ../fixtures/direct-redeem.operation.json",
+    "test": "node --experimental-strip-types --test test/*.test.ts"
+  },
+  "description": "External Chancery direct mint and redeem instruction builders for market-maker integration"
+}

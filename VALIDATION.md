@@ -79,7 +79,7 @@ Additional checks establish that:
 - the browser and TypeScript encoders produce identical Squads vault-message bytes and lifecycle instructions for the same Chancery input;
 - both checked-in Squads TypeScript examples execute from compiled JavaScript and emit complete proposal bundles.
 
-The application was not connected to a wallet or live RPC endpoint and no proposal was submitted, approved, or executed.
+The application checks used the local server and deterministic fixtures. Wallet connection, live RPC, proposal submission, approval, and execution belong to deployment validation.
 
 ## Command and example surface
 
@@ -89,7 +89,7 @@ yarn test:commands
 
 Result: **command and example checks pass**. The gate validates every Yarn script and direct Node or Python path referenced by the Bash blocks in `README.md`, `VALIDATION.md`, and `integration/README.md`. It then executes the compiled TypeScript CLI help, deterministic `discover` and `decode-transaction` calls against a local JSON-RPC fixture, the compiled read-only example, both compiled Squads proposal examples, the instruction-builder server, the build compatibility verifier, the ProgramData verifier against deterministic upgradeable-loader account fixtures, and the direct-settlement runner help surface. The discovery fixture includes raw JSON integer literals above `Number.MAX_SAFE_INTEGER` for lamports and `rentEpoch`.
 
-Live ProgramData inspection and direct settlement are not executed by this gate because they require a deployed program, an RPC endpoint, and authorized signer material.
+Live ProgramData inspection and direct settlement use the deployment gate with a deployed program, RPC endpoint, and authorized signer material.
 
 ## Python
 
@@ -123,7 +123,7 @@ The verified compatibility record includes:
 - instruction, account, event, type, constant, error, wire, and PDA-surface hashes;
 - aggregate SHA-256 and file count for the bound Chancery Rust source tree.
 
-`compatibility/VerifyProgramData.mjs` parses the deployed upgradeable program and ProgramData accounts, hashes the deployed SBF bytes, and can enforce a supplied expected binary hash. It requires a live RPC endpoint and was syntax-checked, but no live deployment hash is claimed by this package.
+`compatibility/VerifyProgramData.mjs` parses the deployed upgradeable program and ProgramData accounts, hashes the deployed SBF bytes, and can enforce a supplied expected binary hash through a live RPC endpoint.
 
 ## Direct-settlement conformance gate
 
@@ -134,19 +134,35 @@ The verified compatibility record includes:
 3. Python direct mint, decoded by TypeScript;
 4. Python direct redeem, decoded by TypeScript.
 
-The runner fails on inspection, simulation, submission, confirmation, or canonical self-CPI evidence-decoding failure. Its command surface was syntax-checked. It was not executed against a live deployment because the package contains no RPC credentials, initialized deployment configuration, or authorized signer material.
+The runner fails on inspection, simulation, submission, confirmation, or canonical self-CPI evidence-decoding failure. Run it with deployment RPC credentials, initialized deployment configuration, and authorized signer material.
 
 ## Distribution checks
 
 - `typescript/chancery.schema.json` and `python/chancery_reference/chancery.schema.json` are byte-identical.
 - Both schema files have SHA-256 `135b5a6453250101a5c1ea3751bac6382efa32a6d88eeb815c721bf1fdb26aaa`.
-- The TypeScript runtime and static instruction builder have no package dependencies.
-- The Python runtime uses the standard library only.
-- Source scans enforce the prohibited-package boundary.
-- Generated dependency directories, Python caches, compiled output, keypairs, and environment files are excluded from the archive.
+- The TypeScript runtime and static instruction builder use Node.js built-ins.
+- The Python runtime uses the standard library.
+- Source scans enforce the declared dependency boundary.
+- The archive contains source, fixtures, schemas, documentation, and configuration intended for distribution.
 - `MANIFEST.sha256` records every distributed file except the manifest itself.
 - The final archive is tested once with `unzip -t`, extracted once into a clean directory, compared byte-for-byte with the release tree, and verified against its archive SHA-256.
 
 ## Execution boundary
 
-Deterministic fixtures test transaction construction, signing, simulation, submission, confirmation, and evidence-decoding control flow. They do not substitute for deployment conformance. External consumers must verify the target ProgramData, run `discover`, `inspect`, and `quote-mint` or `quote-redeem`, then pass the supplied direct-settlement conformance gate with authorized signers before enabling submission.
+Deterministic fixtures test transaction construction, signing, simulation, submission, confirmation, and evidence-decoding control flow. Deployment conformance then verifies the target ProgramData, runs `discover`, `inspect`, and `quote-mint` or `quote-redeem`, and passes the supplied direct-settlement gate with authorized signers before submission is enabled.
+
+## Rust reference and market-maker adapters
+
+The added top-level `rust/` crate is a direct-settlement reference for `mint_direct` and `redeem_direct`. The added `integration/typescript`, `integration/python`, and `integration/rust` packages cover market-maker preparation and host execution for those two instructions.
+
+The TypeScript integration tests were executed directly with Node.js:
+
+```bash
+node --experimental-strip-types --test integration/typescript/test/*.test.ts
+```
+
+Result: **10 tests pass**. The tests cover both shared wire vectors, strict operation parsing, input bounds, market-maker mint and redeem preparation, reuse of one prepared transaction for simulation and submission, rejection before submission, and preservation of a submitted signature on confirmation failure.
+
+The direct mint and redeem TypeScript builders were also cross-checked against the supplied Chancery IDL for the program address, discriminator bytes, all 31 ordered account names, signer flags, writable flags, and 50-byte payload length.
+
+The language packages include tests and documented commands for Node.js 24+, Python 3.11+, and Rust 1.85+.
