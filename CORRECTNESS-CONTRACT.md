@@ -54,7 +54,7 @@ A fee retained by the reserve contributes zero reserve outflow.
 
 Mint usage reads `UsageWindow.gross_in`. Redeem usage reads `UsageWindow.gross_output_amount`. Stale fixed-period windows roll to zero, future-dated windows fail closed, and the quote reports remaining capacity before and after the proposed operation.
 
-Chancery settlement-volume dimensions are pathway, asset, counterparty, and executor. Global containment is represented by global pause state rather than a separate settlement-volume accumulator.
+Chancery settlement-volume dimensions are pathway, asset, counterparty, and executor. Global pause state provides deployment-wide containment.
 
 ## Transfer-aware effective amounts
 
@@ -62,7 +62,7 @@ The consumers decode Token-2022 transfer-fee configuration, select the active ep
 
 ## Build binding
 
-`BUILD-COMPATIBILITY.json` binds the distributed clients to:
+`BUILD-COMPATIBILITY.json` binds the checked-in production reference surface to:
 
 - the Chancery program ID;
 - the complete checked-in wire schema hash;
@@ -70,6 +70,8 @@ The consumers decode Token-2022 transfer-fee configuration, select the active ep
 - an aggregate hash of the Chancery Rust source tree used to derive the reference surface.
 
 `compatibility/VerifyBuildCompatibility.mjs` and `compatibility/verify_build_compatibility.py` verify the distributed schemas and may verify a supplied Chancery source tree. `compatibility/VerifyProgramData.mjs` retrieves an upgradeable Chancery deployment and reports or enforces the deployed ProgramData binary hash.
+
+Command-line clients select `mainnet` or `devnet` through `CHANCERY_TARGET` before process startup. Target selection supplies the program address and derives Chancery singleton PDAs from their declared seeds. The checked-in schema and production compatibility record retain their production binding. Devnet-only preparation and controller forwarding live under `integration/devnet/`.
 
 ## Deployment conformance
 

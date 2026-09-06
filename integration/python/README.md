@@ -4,6 +4,10 @@ This package provides Python builders and host execution contracts for authorize
 
 Read ../MARKET-MAKER-INTEGRATION.md, ../OPERATION-DOCUMENT.md, ../DIRECT-SETTLEMENT.md, and ../PRODUCTION-OPERATIONS.md before production use.
 
+## Devnet testing
+
+Set `CHANCERY_TARGET=devnet` before starting the existing examples to select the specialized deployment. Use [Devnet integration testing](../DEVNET-TESTING.md) for local wallet preparation, collateral faucets, role grants, and live operation-document export. The default target is `mainnet`. Supply an account bundle from the selected deployment.
+
 ## Structure
 
 - chancery_integration/direct_settlement.py contains the exact discriminators, account order, privileges, validation, and payload encoding.

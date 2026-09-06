@@ -2,9 +2,27 @@
 
 Standalone TypeScript and Python reference clients, a top-level Rust direct-settlement example set, dependency-free Squads v4 proposal builders, a static instruction generator, and language-specific market-maker integrations.
 
-**Program address:** `ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz`
+**Production reference program address:** `ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz`
 
 The TypeScript and Python reference implementations directly implement public-key handling, PDA derivation, account codecs, instruction codecs, transaction messages, Ed25519 signing, token-state decoding, RPC calls, and Chancery evidence decoding. The Rust example set uses public Rust crates for Solana instruction types.
+
+## Test on devnet first
+
+The existing command-line clients and examples select their deployment through `CHANCERY_TARGET`. They default to the production reference program. Set `CHANCERY_TARGET=devnet` to use the specialized deployment at `3doMTb5u94mzTDoBbyJXbZscNE3suuQe75ybYmirKute`, with the same example entry points and operation formats.
+
+~~~bash
+yarn install --immutable
+export CHANCERY_TARGET=devnet
+export RPC_URL=https://api.devnet.solana.com
+yarn devnet:wallet --keypair .devnet/tester/keypair.json
+yarn devnet:fund --keypair .devnet/tester/keypair.json
+yarn devnet:setup --keypair .devnet/tester/keypair.json --symbol USDC --amount 3000000
+yarn example:read-only:typescript
+~~~
+
+Use Node.js 24 and Yarn 4.2.2. All commands run from this repository. Separate devnet-only tools prepare wallets, faucet collateral, register direct pathways, grant roles, export live operation documents, and submit explicit public administration instructions. They reuse this repository's reference clients and codecs.
+
+Follow [Devnet integration testing](integration/DEVNET-TESTING.md) for mint/redeem runs through the existing examples, cross-language operation documents, and grants to other addresses. Public administration is shared, so testers can affect one another's state. The separate `chancery-devnet` repository supplies the deployment reference; the tools and examples here are self-contained. The browser generator and compatibility checks retain their production reference binding.
 
 ## Access and authorization
 
@@ -293,7 +311,7 @@ Callers supply existing token accounts. Missing required accounts are reported a
 
 ## 4. Calculate remaining limits correctly
 
-The client reproduces Chancery settlement-limit semantics instead of subtracting one generic counter:
+The client evaluates Chancery settlement limits by dimension and period:
 
 ### Directional accumulators
 
@@ -415,7 +433,7 @@ The report decodes and applies:
 
 A mint fee policy must use issued-token denomination. A redeem fee policy must use asset denomination. A mismatch is a blocking issue.
 
-`minimum-output` is checked against the predicted principal receipt, not merely the pre-transfer Chancery net output.
+`minimum-output` is checked against the predicted principal receipt after applicable token transfer fees.
 
 ### Exactness boundary
 
@@ -680,7 +698,7 @@ An inspection status other than `ready` causes exit `2` before simulation and pr
 
 ## Rust and market-maker direct-settlement examples
 
-The existing top-level TypeScript, Python, and web examples remain unchanged. The top-level `rust/` crate adds typed builders, strict operation-document parsing, normalized instruction output, mint and redeem examples, and shared wire-vector tests for `mint_direct` and `redeem_direct`.
+The top-level `rust/` crate provides typed builders, strict operation-document parsing, normalized instruction output, mint and redeem examples, and shared wire-vector tests for `mint_direct` and `redeem_direct`.
 
 The `integration/` directory contains separate market-maker-facing packages for TypeScript, Python, and Rust. These packages accept a current approved account bundle and operation values, construct one direct-settlement instruction, and expose a host boundary for transaction preparation, exact-transaction simulation, submission, confirmation, and reconciliation.
 
@@ -801,7 +819,7 @@ Run the deployment-bound direct-settlement conformance gate after copying `integ
 yarn integration:direct integration/live-direct-settlement.json
 ```
 
-The runner submits TypeScript mint and redeem operations decoded by Python, followed by Python mint and redeem operations decoded by TypeScript.
+The runner inherits `CHANCERY_TARGET` and submits TypeScript mint and redeem operations decoded by Python, followed by Python mint and redeem operations decoded by TypeScript. The [devnet workflow](integration/DEVNET-TESTING.md) prepares a tester for these same clients.
 
 ## Repository layout
 
@@ -845,6 +863,10 @@ integration/typescript/                         TypeScript market-maker adapter
 integration/python/                             Python market-maker adapter
 integration/rust/                               Rust market-maker adapter
 integration/fixtures/                           Shared direct-settlement operation fixtures
+integration/devnet/commands/                    Devnet-only preparation and administration
+integration/devnet/execution/                   Devnet RPC checks, signing, and confirmation
+integration/devnet/test/                        Offline devnet tooling tests
+integration/DEVNET-TESTING.md                   Public devnet onboarding and testing
 integration/MARKET-MAKER-INTEGRATION.md         External onboarding and workflow boundary
 integration/OPERATION-DOCUMENT.md               Strict cross-language operation document
 integration/DIRECT-SETTLEMENT.md                Direct instruction wire contract
@@ -860,8 +882,7 @@ integration/RunDirectSettlement.mjs              Live direct-settlement conforma
 integration/live-direct-settlement.example.json  Deployment configuration template
 validation/VerifyCommandExamples.mjs             Deterministic command and example gate
 web/instruction-builder/                          Static HTML/MJS instruction generator
-VALIDATION.md                                    Distribution validation record
-MANIFEST.sha256                                  Per-file SHA-256 manifest
+VALIDATION.md                                    Validation commands and acceptance criteria
 ```
 
 ## Checked-in Chancery wire surface

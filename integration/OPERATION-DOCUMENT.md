@@ -9,6 +9,8 @@ The selected loader determines the operation type:
 
 Unknown fields are rejected. Every required field must be present. Public keys are base58 Solana addresses. Amounts are unsigned decimal strings. pathwayId is exactly 32 bytes represented by 64 hexadecimal characters; an optional 0x prefix is accepted.
 
+The builders select their program through `CHANCERY_TARGET`, defaulting to `mainnet`. Supply the matching deployment account bundle. [Devnet integration testing](DEVNET-TESTING.md) exports this same document format from a ready devnet inspection; the document fields and loaders remain the same.
+
 ## Root fields
 
 | Field | Type | Meaning |

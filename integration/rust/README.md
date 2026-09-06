@@ -4,6 +4,10 @@ This crate provides the market-maker execution boundary for authorized external 
 
 Read ../MARKET-MAKER-INTEGRATION.md, ../OPERATION-DOCUMENT.md, ../DIRECT-SETTLEMENT.md, and ../PRODUCTION-OPERATIONS.md before production use.
 
+## Devnet testing
+
+Set `CHANCERY_TARGET=devnet` before starting the existing examples to select the specialized deployment. Use [Devnet integration testing](../DEVNET-TESTING.md) for local wallet preparation, collateral faucets, role grants, and live operation-document export. The default target is `mainnet`. Supply an account bundle from the selected deployment.
+
 ## Structure
 
 - src/market_maker_settlement.rs converts typed direct-settlement inputs into a prepared market-maker settlement.
@@ -13,7 +17,7 @@ Read ../MARKET-MAKER-INTEGRATION.md, ../OPERATION-DOCUMENT.md, ../DIRECT-SETTLEM
 - examples/prepare_redeem_inventory.rs prepares a redeem from an operation document.
 - tests/market_maker_settlement.rs covers preparation, exact prepared-transaction reuse, and simulation rejection.
 
-The exact instruction encoding remains in ../../rust so the protocol reference and the market-maker orchestration boundary remain separate.
+The ../../rust crate owns instruction encoding. This crate owns the market-maker preparation and execution boundary.
 
 ## Requirements
 

@@ -14,7 +14,7 @@
     "test:typescript": "node --import tsx --test typescript/test/*.test.ts",
     "test:commands": "tsc --outDir dist && node validation/VerifyCommandExamples.mjs",
     "test:python": "python -m unittest discover -s python/tests -t python -p 'test_*.py'",
-    "test": "yarn typecheck && yarn test:typescript && yarn test:integration:typescript && yarn test:instruction-builder && yarn test:commands && yarn test:python",
+    "test": "yarn typecheck && yarn test:typescript && yarn test:integration:typescript && yarn test:instruction-builder && yarn test:commands && yarn test:devnet && yarn test:python",
     "cli:typescript": "tsx typescript/src/client/cli.ts",
     "cli:python": "PYTHONPATH=python python -m chancery_reference.cli",
     "example:read-only:typescript": "tsx typescript/examples/ReadOnlyIntegration.ts",
@@ -30,7 +30,17 @@
     "test:instruction-builder": "node web/instruction-builder/test.mjs",
     "test:integration:typescript": "node --experimental-strip-types --test integration/typescript/test/*.test.ts",
     "example:integration:mint:typescript": "node --experimental-strip-types integration/typescript/examples/prepare_mint_inventory.ts integration/fixtures/direct-mint.operation.json",
-    "example:integration:redeem:typescript": "node --experimental-strip-types integration/typescript/examples/prepare_redeem_inventory.ts integration/fixtures/direct-redeem.operation.json"
+    "example:integration:redeem:typescript": "node --experimental-strip-types integration/typescript/examples/prepare_redeem_inventory.ts integration/fixtures/direct-redeem.operation.json",
+    "devnet:wallet": "tsx integration/devnet/commands/RunDevnet.ts wallet",
+    "devnet:fund": "tsx integration/devnet/commands/RunDevnet.ts fund",
+    "devnet:setup": "tsx integration/devnet/commands/RunDevnet.ts setup",
+    "devnet:faucet": "tsx integration/devnet/commands/RunDevnet.ts faucet",
+    "devnet:pathway": "tsx integration/devnet/commands/RunDevnet.ts pathway",
+    "devnet:grant": "tsx integration/devnet/commands/RunDevnet.ts grant",
+    "devnet:operation": "tsx integration/devnet/commands/RunDevnet.ts operation",
+    "devnet:admin": "tsx integration/devnet/commands/RunDevnet.ts admin",
+    "devnet:addresses": "tsx integration/devnet/commands/RunDevnet.ts addresses",
+    "test:devnet": "CHANCERY_TARGET=devnet node --import tsx --test integration/devnet/test/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "25.0.1",

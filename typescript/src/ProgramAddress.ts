@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { decodePublicKey, encodeBase58 } from "./Base58Codec.js";
-import { CHANCERY_PROGRAM_ADDRESS } from "./ChancerySchema.js";
+import { CHANCERY_PROGRAM_ADDRESS } from "./ChanceryTarget.js";
 
 const PROGRAM_DERIVED_ADDRESS_MARKER = new TextEncoder().encode("ProgramDerivedAddress");
 const ED25519_FIELD_MODULUS = (1n << 255n) - 19n;

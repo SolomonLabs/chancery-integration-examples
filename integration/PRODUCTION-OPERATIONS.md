@@ -53,7 +53,7 @@ Preserve the signature on every post-submission error. Classify an unresolved co
 
 ## Reconciliation
 
-Reconcile from confirmed chain data, not requested values alone.
+Reconcile requested values against confirmed transaction metadata, account balances, and settlement evidence.
 
 For mint, reconcile at least:
 

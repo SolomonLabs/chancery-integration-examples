@@ -1,3 +1,6 @@
+import { CHANCERY_PROGRAM_ADDRESS as targetProgramAddress } from "./ChanceryTarget.js";
+import { findProgramAddress } from "./ProgramAddress.js";
+
 import chancerySchemaValue from "../chancery.schema.json" with { type: "json" };
 
 export type PrimitiveTypeName =
@@ -150,7 +153,18 @@ function loadSchema(): ChancerySchema {
     if (typeof schemaValue !== "object" || schemaValue === null) {
         throw new Error("Chancery schema root must be an object");
     }
-    return schemaValue as ChancerySchema;
+    const schema = schemaValue as ChancerySchema;
+    if (schema.program.address === targetProgramAddress) {
+        return schema;
+    }
+    const knownPdas: Record<string, KnownPdaSchema> = {};
+    for (const [name, pda] of Object.entries(schema.known_pdas)) {
+        knownPdas[name] = {
+            seeds: pda.seeds,
+            address: findProgramAddress(pda.seeds.map((seed) => new Uint8Array(seed)), targetProgramAddress).address,
+        };
+    }
+    return { ...schema, program: { ...schema.program, address: targetProgramAddress }, known_pdas: knownPdas };
 }
 
 export const CHANCERY_SCHEMA = loadSchema();

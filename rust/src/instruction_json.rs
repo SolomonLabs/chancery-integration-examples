@@ -3,7 +3,7 @@ use serde::Serialize;
 use solana_sdk::instruction::Instruction;
 
 use crate::{
-    CHANCERY_PROGRAM_ID,
+    selected_program_id,
     IntegrationError,
     MINT_DIRECT_ACCOUNT_NAMES,
     REDEEM_DIRECT_ACCOUNT_NAMES,
@@ -43,7 +43,7 @@ fn instruction_to_document(
     instruction: &Instruction,
     account_names: &[&str; 31],
 ) -> Result<InstructionDocument, IntegrationError> {
-    if instruction.program_id != CHANCERY_PROGRAM_ID {
+    if instruction.program_id != selected_program_id()? {
         return Err(IntegrationError::new(
             "instruction program address does not match Chancery",
         ));

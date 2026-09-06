@@ -1,5 +1,7 @@
 # Direct settlement wire contract
 
+This contract describes the direct-settlement wire format used by the reference builders. `CHANCERY_TARGET` selects the program identity; [Devnet integration testing](DEVNET-TESTING.md) supplies devnet account identities for the same builders.
+
 ## Program and discriminators
 
 | Operation | Discriminator | Payload length |
@@ -7,7 +9,9 @@
 | `mint_direct` | `04 01` | 50 bytes |
 | `redeem_direct` | `04 02` | 50 bytes |
 
-Program address: `ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz`
+Default (`mainnet`) program address: `ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz`
+
+`devnet` program address: `3doMTb5u94mzTDoBbyJXbZscNE3suuQe75ybYmirKute`
 
 ## Payload layout
 

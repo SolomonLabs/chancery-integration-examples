@@ -1,8 +1,12 @@
 # Rust direct-settlement reference
 
-The top-level rust crate adds a Rust example set beside the repository's existing TypeScript and Python references. It provides typed Solana instruction builders for Chancery mint_direct and redeem_direct, strict operation-document parsing, normalized instruction output, runnable examples, and shared wire-vector tests.
+The top-level rust crate provides typed Solana instruction builders for Chancery mint_direct and redeem_direct, strict operation-document parsing, normalized instruction output, runnable examples, and shared wire-vector tests.
 
 The crate uses public Rust crates to construct typed Solana instructions for mint_direct and redeem_direct.
+
+## Devnet testing
+
+Set `CHANCERY_TARGET=devnet` before starting the existing examples to select the specialized deployment. Use [Devnet integration testing](../integration/DEVNET-TESTING.md) for local wallet preparation, collateral faucets, role grants, and live operation-document export. The default target is `mainnet`. Supply an account bundle from the selected deployment.
 
 ## Structure
 

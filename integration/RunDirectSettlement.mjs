@@ -4,6 +4,14 @@ import { dirname, isAbsolute, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+const target = process.env.CHANCERY_TARGET ?? "mainnet";
+if (target !== "mainnet" && target !== "devnet") {
+    throw new Error("CHANCERY_TARGET must be mainnet or devnet");
+}
+const programAddress = target === "devnet"
+    ? "3doMTb5u94mzTDoBbyJXbZscNE3suuQe75ybYmirKute"
+    : "ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz";
+
 const configArgument = process.argv[2];
 if (configArgument === undefined || process.argv.includes("--help") || process.argv.includes("-h")) {
     process.stdout.write([
@@ -185,6 +193,6 @@ for (let index = 0; index < expectedOperations.length; index++) {
 process.stdout.write(`${JSON.stringify({
     rpc,
     commitment,
-    programId: "ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz",
+    programId: programAddress,
     results,
 }, null, 2)}\n`);

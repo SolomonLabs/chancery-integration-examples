@@ -25,6 +25,7 @@
     "resolveJsonModule": true
   },
   "include": [
-    "typescript/**/*.ts"
+    "typescript/**/*.ts",
+    "integration/devnet/**/*.ts"
   ]
 }

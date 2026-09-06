@@ -7,14 +7,15 @@ Each language set covers two direct-settlement pathways:
 - mint_direct: transfer an approved reserve asset into the configured reserve account and receive the issued token;
 - redeem_direct: burn the issued token and receive the approved reserve asset from the configured reserve account.
 
-## Relationship to the existing examples
+## Deployment workflows
 
-The repository's existing top-level TypeScript, Python, web, compatibility, and live-conformance examples remain in place. A top-level rust directory adds a Rust direct-settlement reference beside those existing language sets.
+Start with [Devnet integration testing](DEVNET-TESTING.md) to prepare a local tester wallet, faucet collateral, grant settlement roles, and register a direct pathway through the public devnet controller. The `devnet/` tooling runs entirely from this repository.
 
-The packages under integration provide market-maker preparation, transaction handoff, confirmation, and reconciliation workflows around an approved account bundle.
+The TypeScript, Python, and Rust packages select their instruction program through `CHANCERY_TARGET`, defaulting to `mainnet`. Use `devnet` with a live devnet operation document and the same preparation examples and host execution interfaces. The top-level TypeScript and Python clients provide discovery and settlement resolution; the top-level Rust crate provides the Rust wire builders.
 
 ## Start here
 
+- [DEVNET-TESTING.md](DEVNET-TESTING.md) provides public devnet setup and settlement examples.
 - MARKET-MAKER-INTEGRATION.md defines the integration boundary and inventory flows.
 - OPERATION-DOCUMENT.md defines the strict input document accepted by all three language sets.
 - DIRECT-SETTLEMENT.md defines the exact program address, instruction bytes, account positions, and account privileges.
@@ -69,9 +70,9 @@ cargo test
 
 Each preparation example emits a normalized instruction document for the host transaction pipeline.
 
-## Existing live conformance gate
+## Deployment conformance gate
 
-RunDirectSettlement.mjs remains the repository's deployment-bound cross-language conformance gate. It uses the existing top-level TypeScript and Python reference clients as a separate live validation entry point.
+RunDirectSettlement.mjs runs cross-language conformance using the top-level TypeScript and Python clients and the selected `CHANCERY_TARGET`. Supply the matching deployment RPC, accounts, and signers.
 
 After copying live-direct-settlement.example.json to live-direct-settlement.json and replacing every placeholder, run from the repository root:
 

@@ -4,7 +4,7 @@ use solana_sdk::{
     pubkey::Pubkey,
 };
 
-use crate::IntegrationError;
+use crate::{IntegrationError, selected_program_id};
 
 pub const CHANCERY_PROGRAM_ID: Pubkey =
     pubkey!("ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz");
@@ -250,12 +250,12 @@ pub fn build_mint_direct_instruction(
             "accounts.policyAccounts.counterpartyDailyUsageWindow",
             policy_accounts.counterparty_daily_usage_window,
         )?,
-        AccountMeta::new_readonly(CHANCERY_PROGRAM_ID, false),
+        AccountMeta::new_readonly(selected_program_id()?, false),
     ];
 
     ensure_account_count("mint_direct", &account_metas)?;
     Ok(Instruction {
-        program_id: CHANCERY_PROGRAM_ID,
+        program_id: selected_program_id()?,
         accounts: account_metas,
         data: encode_direct_arguments(
             [4, 1],
@@ -367,12 +367,12 @@ pub fn build_redeem_direct_instruction(
             "accounts.policyAccounts.counterpartyDailyUsageWindow",
             policy_accounts.counterparty_daily_usage_window,
         )?,
-        AccountMeta::new_readonly(CHANCERY_PROGRAM_ID, false),
+        AccountMeta::new_readonly(selected_program_id()?, false),
     ];
 
     ensure_account_count("redeem_direct", &account_metas)?;
     Ok(Instruction {
-        program_id: CHANCERY_PROGRAM_ID,
+        program_id: selected_program_id()?,
         accounts: account_metas,
         data: encode_direct_arguments(
             [4, 2],

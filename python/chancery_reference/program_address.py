@@ -5,7 +5,7 @@ from hashlib import sha256
 from collections.abc import Sequence
 
 from .base58_codec import decode_public_key, encode_base58
-from .schema import CHANCERY_PROGRAM_ADDRESS
+from .target import CHANCERY_PROGRAM_ADDRESS
 
 PROGRAM_DERIVED_ADDRESS_MARKER = b"ProgramDerivedAddress"
 ED25519_FIELD_MODULUS = (1 << 255) - 19

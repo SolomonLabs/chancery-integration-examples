@@ -1,3 +1,4 @@
+import { chanceryProgramIdForTarget } from "./target.ts";
 import { assertPublicKey } from "./base58.ts";
 import type {
     AccountMetaSpec,
@@ -7,7 +8,7 @@ import type {
     RedeemDirectOperationInput,
 } from "./model.ts";
 
-export const CHANCERY_PROGRAM_ID = "ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz";
+export const CHANCERY_PROGRAM_ID = chanceryProgramIdForTarget(process.env.CHANCERY_TARGET);
 export const DEFAULT_PUBLIC_KEY = "11111111111111111111111111111111";
 export const MAXIMUM_U64 = 18_446_744_073_709_551_615n;
 

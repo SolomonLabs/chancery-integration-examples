@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 from typing import cast
 
+from .program_address import find_program_address
+from .target import CHANCERY_PROGRAM_ADDRESS as target_program_address
+
 SchemaRecord = dict[str, object]
 TypeSchema = str | SchemaRecord
 
@@ -13,7 +16,15 @@ def _load_schema() -> SchemaRecord:
     schema_value: object = json.loads(schema_path.read_text(encoding="utf-8"))
     if not isinstance(schema_value, dict):
         raise ValueError("Chancery schema root must be an object")
-    return cast(SchemaRecord, schema_value)
+    schema = cast(SchemaRecord, schema_value)
+    program = cast(SchemaRecord, schema["program"])
+    if program["address"] != target_program_address:
+        schema["program"] = {**program, "address": target_program_address}
+        known_pdas = cast(dict[str, SchemaRecord], schema["known_pdas"])
+        for pda in known_pdas.values():
+            seeds = cast(list[list[int]], pda["seeds"])
+            pda["address"] = find_program_address([bytes(seed) for seed in seeds], target_program_address).address
+    return schema
 
 
 CHANCERY_SCHEMA = _load_schema()

@@ -2,6 +2,9 @@ mod direct_settlement;
 mod error;
 mod instruction_json;
 mod operation;
+mod target;
+
+pub use target::{CHANCERY_DEVNET_PROGRAM_ID, program_id_for_target, selected_program_id};
 
 pub use direct_settlement::{
     CHANCERY_PROGRAM_ID,

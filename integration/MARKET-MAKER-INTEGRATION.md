@@ -34,6 +34,10 @@ ledger and reconciliation
 
 The adapter is the protocol-specific instruction boundary connecting inventory, quoting, custody, RPC, transaction, and ledger systems to Chancery.
 
+## Devnet onboarding
+
+[Devnet integration testing](DEVNET-TESTING.md) uses separate tools in this repository to establish tester permissions, faucet collateral, register direct pathways, and export current account bundles. Select `CHANCERY_TARGET=devnet` and use the existing adapters. Production onboarding supplies approved production identities and bundles for `CHANCERY_TARGET=mainnet`.
+
 ## Onboarding inputs
 
 Before settlement is enabled, the integrating entity needs the current operational account bundle for each approved principal, pathway, and asset relationship. The bundle includes:
