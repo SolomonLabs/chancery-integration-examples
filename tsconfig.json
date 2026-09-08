@@ -26,6 +26,7 @@
   },
   "include": [
     "typescript/**/*.ts",
-    "integration/devnet/**/*.ts"
+    "integration/devnet/**/*.ts",
+    "oracles/typescript/**/*.ts"
   ]
 }

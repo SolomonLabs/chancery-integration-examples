@@ -1,6 +1,6 @@
 # Chancery Integration Examples
 
-Standalone TypeScript and Python reference clients, a top-level Rust direct-settlement example set, dependency-free Squads v4 proposal builders, a static instruction generator, and language-specific market-maker integrations.
+Standalone TypeScript and Python reference clients, a focused oracle/data-provider surface, a top-level Rust direct-settlement example set, dependency-free Squads v4 proposal builders, a static instruction generator, and language-specific market-maker integrations.
 
 **Production reference program address:** `ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz`
 
@@ -32,9 +32,10 @@ Chancery enforces authorization on-chain through `PermissionRecord` role bits, p
 
 ## Intended consumers
 
-The repository serves four integration patterns:
+The repository serves five integration patterns:
 
-- **Read-only integrations** — indexers, oracles, reconciliation systems, risk and treasury reporting. These use `discover` to inventory deployment state and `decode-transaction` to read canonical self-CPI settlement evidence from public RPC data. See `typescript/examples/ReadOnlyIntegration.ts` and `python/examples/read_only_integration.py`.
+- **Read-only integrations** — reconciliation systems, risk and treasury reporting. These use `discover` to inventory deployment state and `decode-transaction` to read canonical self-CPI settlement evidence from public RPC data. See `typescript/examples/ReadOnlyIntegration.ts` and `python/examples/read_only_integration.py`.
+- **Oracle and data-provider integrations** — consumers that only need current asset mints, deposit/redeem rates, and program-wide fee applicability. See `oracles/README.md` for the focused TypeScript and Python surface.
 - **Settlement integrations** — a principal, a delegated executor, or a trilateral counterparty set holding an on-chain permission grant. These additionally use `inspect`, `quote-mint`, `quote-redeem`, `mint`, and `redeem`. See `typescript/examples/SettlementWorkflow.ts` and `python/examples/settlement_workflow.py`.
 - **Governance integrations** — Squads v4 members constructing vault transactions that contain one or more ordered Chancery instructions. See `typescript/examples/SquadsChanceryProposal.ts`, `typescript/examples/SquadsChanceryBatchProposal.ts`, and `web/instruction-builder/`.
 - **External market-maker integrations:** authorized market makers, minting entities, redemption counterparties, and treasury systems embedding `mint_direct` and `redeem_direct` in their existing transaction, custody, and reconciliation systems. See `integration/` and the top-level `rust/` reference.
@@ -105,7 +106,7 @@ cargo test --manifest-path rust/Cargo.toml
 yarn test:integration:typescript
 ```
 
-The Rust examples and all external market-maker adapters are documented in `rust/README.md` and `integration/README.md`.
+The Rust examples and all external market-maker adapters are documented in `rust/README.md` and `integration/README.md`. The focused oracle/data-provider surface is documented in `oracles/README.md`.
 
 ## 1. Discover the complete Chancery state
 
