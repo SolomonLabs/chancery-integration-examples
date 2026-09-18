@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 CHANCERY_MAINNET_PROGRAM_ADDRESS = "ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz"
-CHANCERY_DEVNET_PROGRAM_ADDRESS = "3doMTb5u94mzTDoBbyJXbZscNE3suuQe75ybYmirKute"
+CHANCERY_DEVNET_PROGRAM_ADDRESS = "GD9qamyghF32gG21KEkbp6quBsd2tU771tFcRVu1SPKs"
 
 
 def chancery_program_address_for_target(target: str = "mainnet") -> str:

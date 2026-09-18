@@ -8,7 +8,7 @@ The TypeScript and Python reference implementations directly implement public-ke
 
 ## Test on devnet first
 
-The existing command-line clients and examples select their deployment through `CHANCERY_TARGET`. They default to the production reference program. Set `CHANCERY_TARGET=devnet` to use the specialized deployment at `3doMTb5u94mzTDoBbyJXbZscNE3suuQe75ybYmirKute`, with the same example entry points and operation formats.
+The existing command-line clients and examples select their deployment through `CHANCERY_TARGET`. They default to the production reference program. Set `CHANCERY_TARGET=devnet` to use the specialized deployment at `GD9qamyghF32gG21KEkbp6quBsd2tU771tFcRVu1SPKs`, with the same example entry points and operation formats.
 
 ~~~bash
 yarn install --immutable

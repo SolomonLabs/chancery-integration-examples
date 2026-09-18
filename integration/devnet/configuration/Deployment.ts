@@ -9,13 +9,13 @@ export interface TestAsset {
 
 export const DEVNET_RPC_URL = "https://api.devnet.solana.com";
 export const DEVNET_GENESIS_HASH = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
-export const FAUCET_PROGRAM_ADDRESS = "6JgE46kwvTqPpY7s2DDjFDvSqWdmfm9puoDBRqHubn85";
-export const ISSUED_TOKEN_MINT = "FEA2m8pnzXLXdh3irYhJPKgmLhK23sdSgB1KjmXqyVqz";
+export const FAUCET_PROGRAM_ADDRESS = "5Hk5sfd1LzMZP5bcEceep1bqnQvBwxBUXxqPAVkWNr5t";
+export const ISSUED_TOKEN_MINT = "Wdek6QzQzHoT822HLPUHWowYrRHUcX4w5CRfRYQ5fh2";
 export const TEST_ASSETS: readonly TestAsset[] = [
-    { symbol: "USDC", mint: "A3wGiSTtQLaEBLnYMSDUUgrSzs3b9gQpyah1sVowHFce", tokenProgramAddress: SPL_TOKEN_PROGRAM_ADDRESS },
-    { symbol: "USDT", mint: "G4WrQJD2nu61VuCVv3wpZt4FB92Hb3UJPMU4kMdvoTz7", tokenProgramAddress: SPL_TOKEN_PROGRAM_ADDRESS },
-    { symbol: "USDG", mint: "4y7HzfopqgJp87S6uyuMaMy3TB6ME1oqQkFpZZoRvtnj", tokenProgramAddress: TOKEN_2022_PROGRAM_ADDRESS },
-    { symbol: "PYUSD", mint: "BLCaBUQ591XkddMF7HZVwpFayutrW5wfdYBxkvL3w2r8", tokenProgramAddress: TOKEN_2022_PROGRAM_ADDRESS },
+    { symbol: "USDC", mint: "BJQqgRMVL4skTdZrG84Jr9SVeRf3kDmrwxGprsxKXpWi", tokenProgramAddress: SPL_TOKEN_PROGRAM_ADDRESS },
+    { symbol: "USDT", mint: "5UwxHbseoNMBPWhJF7b8L3W62HNqfvQMeqwSVb9DCX3J", tokenProgramAddress: SPL_TOKEN_PROGRAM_ADDRESS },
+    { symbol: "USDG", mint: "Gudt7yXy3F2pijueq4HTD4SFNjTpcM1Uvj1iqgw7LA5E", tokenProgramAddress: TOKEN_2022_PROGRAM_ADDRESS },
+    { symbol: "PYUSD", mint: "HHfaFx4QHomyZv75s2bVbnuGWAufAxfC1a8JAzozH3yk", tokenProgramAddress: TOKEN_2022_PROGRAM_ADDRESS },
 ];
 
 export function requireDevnetTarget(): void {

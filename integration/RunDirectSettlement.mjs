@@ -9,7 +9,7 @@ if (target !== "mainnet" && target !== "devnet") {
     throw new Error("CHANCERY_TARGET must be mainnet or devnet");
 }
 const programAddress = target === "devnet"
-    ? "3doMTb5u94mzTDoBbyJXbZscNE3suuQe75ybYmirKute"
+    ? "GD9qamyghF32gG21KEkbp6quBsd2tU771tFcRVu1SPKs"
     : "ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz";
 
 const configArgument = process.argv[2];

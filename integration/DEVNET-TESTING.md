@@ -16,9 +16,9 @@ Set `CHANCERY_TARGET` before starting each process. It selects the program addre
 
 Configured identities:
 
-- Chancery: `3doMTb5u94mzTDoBbyJXbZscNE3suuQe75ybYmirKute`.
-- Faucet/controller: `6JgE46kwvTqPpY7s2DDjFDvSqWdmfm9puoDBRqHubn85`.
-- Issued-token mint: `FEA2m8pnzXLXdh3irYhJPKgmLhK23sdSgB1KjmXqyVqz`.
+- Chancery: `GD9qamyghF32gG21KEkbp6quBsd2tU771tFcRVu1SPKs`.
+- Faucet/controller: `5Hk5sfd1LzMZP5bcEceep1bqnQvBwxBUXxqPAVkWNr5t`.
+- Issued-token mint: `Wdek6QzQzHoT822HLPUHWowYrRHUcX4w5CRfRYQ5fh2`.
 
 The identities in `integration/devnet/configuration/Deployment.ts` correspond to the supplied deployment's `config/networks/devnet.ts`. Network commands check the devnet genesis. Preparation and administration also check executable program accounts, the issued mint, and the public controller authority handoff. Commands use a provisioned deployment with active collateral configurations, enabled modules, and a settlement-ready issued token.
 

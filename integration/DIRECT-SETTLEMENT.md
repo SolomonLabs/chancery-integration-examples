@@ -11,7 +11,7 @@ This contract describes the direct-settlement wire format used by the reference 
 
 Default (`mainnet`) program address: `ChnryP5RcZtMvP8vvVyPGUhwCg6uDJc53vCe3sxr11Sz`
 
-`devnet` program address: `3doMTb5u94mzTDoBbyJXbZscNE3suuQe75ybYmirKute`
+`devnet` program address: `GD9qamyghF32gG21KEkbp6quBsd2tU771tFcRVu1SPKs`
 
 ## Payload layout
 
